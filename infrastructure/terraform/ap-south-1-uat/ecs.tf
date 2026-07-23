@@ -179,6 +179,7 @@ resource "aws_ecs_service" "backend" {
   task_definition                    = aws_ecs_task_definition.backend.arn
   desired_count                      = var.ecs_min_capacity
   launch_type                        = "FARGATE"
+  health_check_grace_period_seconds  = 120
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
@@ -204,6 +205,7 @@ resource "aws_ecs_service" "frontend" {
   task_definition                    = aws_ecs_task_definition.frontend.arn
   desired_count                      = var.ecs_min_capacity
   launch_type                        = "FARGATE"
+  health_check_grace_period_seconds  = 120
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
