@@ -9,6 +9,13 @@ const session = require("express-session");
 const mongoose = require('mongoose');
 const MongoStore = require('connect-mongo').default;
 
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Process Uncaught Exception:', err.message);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('⚠️ Process Unhandled Rejection:', err);
+});
+
 const summarizeRoutes = require("./routes/summarizeRoutes");
 const historyRoutes = require("./routes/historyRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
