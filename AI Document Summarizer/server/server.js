@@ -40,6 +40,30 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const NODE_ENV = process.env.NODE_ENV || "development";
 
+const User = require('./models/User');
+
+// Seed Default User Account
+const seedDefaultUser = async () => {
+  try {
+    const defaultEmail = "maneeskumar3434@gmail.com";
+    const existing = await User.findOne({ email: defaultEmail });
+    if (!existing) {
+      const bcrypt = require('bcryptjs');
+      const hashed = await bcrypt.hash("Password123!", 10);
+      await User.create({
+        name: "Manish",
+        email: defaultEmail,
+        password: hashed,
+        role: "admin",
+        plan: "enterprise"
+      });
+      console.log('✅ Auto-created default admin user: maneeskumar3434@gmail.com / Password123!');
+    }
+  } catch (err) {
+    console.error('User seed notice:', err.message);
+  }
+};
+
 // MongoDB Connection with Retry Logic
 const connectDB = async () => {
   try {
@@ -54,6 +78,7 @@ const connectDB = async () => {
       w: 'majority'
     });
     console.log('✅ MongoDB connected successfully');
+    await seedDefaultUser();
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
     console.error('Retrying in 5 seconds...');
