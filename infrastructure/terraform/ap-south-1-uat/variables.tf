@@ -76,3 +76,88 @@ variable "redis_node_type" {
   type        = string
   default     = "cache.t3.micro"
 }
+
+# ── Application Secrets ────────────────────────────────────────────────────
+variable "session_secret" {
+  description = "Session secret key (min 32 chars)"
+  type        = string
+  sensitive   = true
+  default     = "change-this-to-a-secure-random-secret-key-32"
+}
+
+variable "google_client_id" {
+  description = "Google OAuth Client ID"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth Client Secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "groq_api_key" {
+  description = "Groq AI API Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "anthropic_api_key" {
+  description = "Anthropic Claude API Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "openai_api_key" {
+  description = "OpenAI API Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gemini_key_1" {
+  description = "Google Gemini API Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "email_user" {
+  description = "SMTP Email address"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "email_pass" {
+  description = "SMTP Email app password"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cashfree_app_id" {
+  description = "Cashfree App ID"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cashfree_secret_key" {
+  description = "Cashfree Secret Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cashfree_webhook_secret" {
+  description = "Cashfree Webhook Secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

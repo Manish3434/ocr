@@ -85,10 +85,43 @@ resource "aws_ecs_task_definition" "backend" {
       ]
 
       environment = [
-        { name = "NODE_ENV", value = "production" },
-        { name = "PORT", value = "5000" },
-        { name = "MONGO_URI", value = "mongodb://${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer" },
-        { name = "REDIS_URI", value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" }
+        # ── Core Server Config ────────────────────────────────────────────
+        { name = "NODE_ENV",        value = "production" },
+        { name = "PORT",            value = "5000" },
+        { name = "SESSION_SECRET",  value = var.session_secret },
+        { name = "FRONTEND_URL",    value = "http://${aws_lb.main.dns_name}" },
+        { name = "SERVER_URL",      value = "http://${aws_lb.main.dns_name}" },
+        { name = "ALLOWED_ORIGINS", value = "http://${aws_lb.main.dns_name}" },
+
+        # ── Database & Cache ──────────────────────────────────────────────
+        { name = "MONGO_URI",  value = "mongodb://${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer" },
+        { name = "MONGO_TLS",  value = "false" },
+        { name = "REDIS_URI",  value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" },
+
+        # ── AI API Keys ───────────────────────────────────────────────────
+        { name = "GROQ_API_KEY",      value = var.groq_api_key },
+        { name = "GROQ_MODEL",        value = "llama-3.3-70b-versatile" },
+        { name = "ANTHROPIC_API_KEY", value = var.anthropic_api_key },
+        { name = "OPENAI_API_KEY",    value = var.openai_api_key },
+        { name = "GEMINI_KEY_1",      value = var.gemini_key_1 },
+        { name = "GEMINI_KEYS_COUNT", value = "1" },
+
+        # ── OAuth ─────────────────────────────────────────────────────────
+        { name = "GOOGLE_CLIENT_ID",     value = var.google_client_id },
+        { name = "GOOGLE_CLIENT_SECRET", value = var.google_client_secret },
+
+        # ── Email ─────────────────────────────────────────────────────────
+        { name = "EMAIL_HOST", value = "smtp.gmail.com" },
+        { name = "EMAIL_PORT", value = "587" },
+        { name = "EMAIL_USER", value = var.email_user },
+        { name = "EMAIL_PASS", value = var.email_pass },
+        { name = "EMAIL_FROM", value = var.email_user },
+
+        # ── Payment (Cashfree) ────────────────────────────────────────────
+        { name = "CASHFREE_APP_ID",        value = var.cashfree_app_id },
+        { name = "CASHFREE_SECRET_KEY",    value = var.cashfree_secret_key },
+        { name = "CASHFREE_ENV",           value = "PRODUCTION" },
+        { name = "CASHFREE_WEBHOOK_SECRET", value = var.cashfree_webhook_secret }
       ]
 
       logConfiguration = {
