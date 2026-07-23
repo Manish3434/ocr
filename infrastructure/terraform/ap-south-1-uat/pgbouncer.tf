@@ -30,7 +30,9 @@ resource "aws_security_group" "pgbouncer" {
 module "pgbouncer" {
   source = "../modules/pgbouncer"
 
-  environment       = var.environment
-  vpc_id           = aws_vpc.main.id
-  security_group_id = aws_security_group.ecs.id
+  environment        = var.environment
+  vpc_id            = aws_vpc.main.id
+  private_subnet_ids = aws_subnet.private_app[*].id
+  security_group_id  = aws_security_group.ecs.id
+  db_host            = aws_docdb_cluster.docdb.endpoint
 }
