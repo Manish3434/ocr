@@ -11,7 +11,7 @@ resource "aws_elasticache_replication_group" "redis" {
   automatic_failover_enabled  = true
   multi_az_enabled            = true
   at_rest_encryption_enabled  = true
-  transit_encryption_enabled = true
+  transit_encryption_enabled = false
 
   maintenance_window = "sun:03:00-sun:04:00"
   snapshot_window    = "01:00-02:00"
