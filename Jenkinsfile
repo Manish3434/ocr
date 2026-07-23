@@ -269,6 +269,8 @@ pipeline {
                     if (params.DEPLOY_TARGET == 'aws_ecs') {
                         echo "🩺 Probing AWS ALB Healthcheck..."
                         sh """
+                            echo "⏳ Waiting 45 seconds for ECS Fargate containers to register with ALB..."
+                            sleep 45
                             if [ -n "${params.AWS_ACCESS_KEY_ID_OVERRIDE}" ] && [ -n "${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}" ]; then
                                 export AWS_ACCESS_KEY_ID="${params.AWS_ACCESS_KEY_ID_OVERRIDE}"
                                 export AWS_SECRET_ACCESS_KEY="${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}"
@@ -280,7 +282,7 @@ pipeline {
                             ENV_NAME="uat"
                             ALB_DNS=\$(aws elbv2 describe-load-balancers --names "ai-docs-alb-\$ENV_NAME" --region "\$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
                             if [ -n "\$ALB_DNS" ]; then
-                                curl --fail --retry 5 --retry-delay 10 "http://\$ALB_DNS/api/health" || echo "AWS ALB Probe Completed!"
+                                curl --fail --retry 10 --retry-delay 10 "http://\$ALB_DNS/api/health" || echo "AWS ALB Probe Completed!"
                             else
                                 echo "AWS ALB DNS not found yet - skipping probe."
                             fi
