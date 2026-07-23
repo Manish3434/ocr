@@ -181,7 +181,7 @@ pipeline {
                             if [ ! -f "./terraform" ]; then
                                 echo "Downloading local Terraform CLI binary..."
                                 curl -sSL -o terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-                                python3 -c "import zipfile; zipfile.ZipFile('terraform.zip').extractall('.')"
+                                python3 -c "import zipfile; z = zipfile.ZipFile('terraform.zip'); z.extract('terraform', '.')"
                                 chmod +x ./terraform
                                 rm -f terraform.zip
                             fi
