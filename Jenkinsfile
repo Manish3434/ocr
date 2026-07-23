@@ -242,13 +242,9 @@ pipeline {
                             (apt-get update && apt-get install -y docker.io docker-compose) || true
                         fi
 
-                        APP_DIR="/opt/ai-document-summarizer/AI Document Summarizer"
-                        if [ ! -d "\$APP_DIR" ]; then
-                            if [ -d "repository/AI Document Summarizer" ]; then
-                                APP_DIR="repository/AI Document Summarizer"
-                            else
-                                APP_DIR="AI Document Summarizer"
-                            fi
+                        APP_DIR="AI Document Summarizer"
+                        if [ -d "repository/AI Document Summarizer" ]; then
+                            APP_DIR="repository/AI Document Summarizer"
                         fi
 
                         cd "\$APP_DIR"
@@ -259,7 +255,7 @@ pipeline {
                             cp .env.example .env || touch .env
                         fi
 
-                        docker compose up -d --build
+                        docker compose up -d --build || docker-compose up -d --build
                     """
                 }
             }
