@@ -1,14 +1,14 @@
 # ── AWS Region & Environment ───────────────────────────────────────────────
-aws_region  = "ap-south-1"
+aws_region  = "ap-northeast-1"
 environment = "uat"
 
 # ── Network Configuration ──────────────────────────────────────────────────
 vpc_cidr    = "10.0.0.0/16"
 domain_name = "precisqo.com"
 
-# ── Container Registry Images (ECR) ────────────────────────────────────────
-backend_image  = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-backend:latest"
-frontend_image = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-frontend:latest"
+# ── Container Registry Images (ECR Tokyo) ──────────────────────────────────
+backend_image  = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-backend:latest"
+frontend_image = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-frontend:latest"
 
 # ── Compute Resources (ECS Fargate) ────────────────────────────────────────
 ecs_backend_cpu     = 512
