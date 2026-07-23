@@ -260,6 +260,11 @@ pipeline {
                 script {
                     echo "🚀 Deploying live stack onto VPS ${env.VPS_IP}..."
                     sh """
+                        if ! command -v docker >/dev/null 2>&1; then
+                            echo "Installing Docker CLI inside Jenkins container..."
+                            (apt-get update && apt-get install -y docker.io docker-compose-v2) || true
+                        fi
+
                         APP_DIR="/opt/ai-document-summarizer/AI Document Summarizer"
                         if [ ! -d "\$APP_DIR" ]; then
                             if [ -d "repository/AI Document Summarizer" ]; then
