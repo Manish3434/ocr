@@ -160,16 +160,17 @@ pipeline {
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
 
-                        if command -v terraform >/dev/null 2>&1; then
-                            terraform init
-                            terraform validate
-                            terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
-                            terraform apply -auto-approve tfplan
-                        else
-                            echo "Terraform CLI container fallback..."
-                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws -v "$PWD:/workspace" -w /workspace hashicorp/terraform:latest init
-                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws -v "$PWD:/workspace" -w /workspace hashicorp/terraform:latest apply -auto-approve -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars"
+                        if ! command -v terraform >/dev/null 2>&1; then
+                            echo "Installing Terraform CLI..."
+                            wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+                            unzip -o terraform_1.8.5_linux_amd64.zip -d /usr/local/bin/
+                            rm -f terraform_1.8.5_linux_amd64.zip
                         fi
+
+                        terraform init
+                        terraform validate
+                        terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
+                        terraform apply -auto-approve tfplan
                     '''
                 }
             }
