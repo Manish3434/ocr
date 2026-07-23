@@ -34,8 +34,8 @@ pipeline {
                     echo "📦 Preparing source workspace..."
                     sh """
                         if [ -d "repository" ]; then
-                            echo "Updating existing repository..."
-                            cd repository && git pull origin main
+                            echo "Updating existing repository to remote main..."
+                            cd repository && git fetch origin main && git reset --hard origin/main
                         elif [ -d "AI Document Summarizer" ]; then
                             echo "Using direct SCM workspace checkout."
                         else
