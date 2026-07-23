@@ -16,9 +16,9 @@ ecs_frontend_cpu    = 256
 ecs_frontend_memory = 512
 
 # ── Auto Scaling Limits ────────────────────────────────────────────────────
-ecs_min_capacity = 2
-ecs_max_capacity = 10
+ecs_min_capacity = 1
+ecs_max_capacity = 4
 
 # ── Database & Cache Instance Specs ───────────────────────────────────────
-db_instance_class = "db.r6g.large"
-redis_node_type   = "cache.t4g.medium"
+db_instance_class = "db.t3.medium"
+redis_node_type   = "cache.t3.micro"

@@ -22,7 +22,7 @@ resource "aws_internet_gateway" "gw" {
   }
 }
 
-# 3 Public Subnets (ALB & NAT Gateways)
+# 3 Public Subnets (ALB & NAT Gateway)
 resource "aws_subnet" "public" {
   count                   = 3
   vpc_id                  = aws_vpc.main.id
@@ -62,24 +62,24 @@ resource "aws_subnet" "private_db" {
   }
 }
 
-# Elastic IPs for NAT Gateways
+# Single Elastic IP for NAT Gateway (cost-optimised for UAT)
 resource "aws_eip" "nat" {
-  count  = 3
+  count  = 1
   domain = "vpc"
 
   tags = {
-    Name = "ai-docs-nat-eip-${count.index + 1}-${var.environment}"
+    Name = "ai-docs-nat-eip-${var.environment}"
   }
 }
 
-# NAT Gateways in each Availability Zone for Redundant Outbound Connectivity
+# Single NAT Gateway in first AZ (cost-optimised for UAT)
 resource "aws_nat_gateway" "nat" {
-  count         = 3
-  allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.public[count.index].id
+  count         = 1
+  allocation_id = aws_eip.nat[0].id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = {
-    Name = "ai-docs-nat-gw-${count.index + 1}-${var.environment}"
+    Name = "ai-docs-nat-gw-${var.environment}"
   }
 
   depends_on = [aws_internet_gateway.gw]
@@ -105,25 +105,25 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private Application Route Tables (1 per AZ via NAT Gateway)
+# Single shared Private Route Table via the one NAT Gateway
 resource "aws_route_table" "private_app" {
-  count  = 3
+  count  = 1
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat[count.index].id
+    nat_gateway_id = aws_nat_gateway.nat[0].id
   }
 
   tags = {
-    Name = "ai-docs-private-app-rt-${count.index + 1}-${var.environment}"
+    Name = "ai-docs-private-app-rt-${var.environment}"
   }
 }
 
 resource "aws_route_table_association" "private_app" {
   count          = 3
   subnet_id      = aws_subnet.private_app[count.index].id
-  route_table_id = aws_route_table.private_app[count.index].id
+  route_table_id = aws_route_table.private_app[0].id
 }
 
 # Database Subnet Group for RDS/DocumentDB

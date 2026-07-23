@@ -56,23 +56,23 @@ variable "ecs_frontend_memory" {
 variable "ecs_min_capacity" {
   description = "Minimum capacity of ECS tasks for autoscaling"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "ecs_max_capacity" {
   description = "Maximum capacity of ECS tasks for autoscaling"
   type        = number
-  default     = 10
+  default     = 4
 }
 
 variable "db_instance_class" {
   description = "Instance class for relational database / DocumentDB cluster"
   type        = string
-  default     = "db.r6g.large"
+  default     = "db.t3.medium"
 }
 
 variable "redis_node_type" {
   description = "ElastiCache Redis node type"
   type        = string
-  default     = "cache.t4g.medium"
+  default     = "cache.t3.micro"
 }
