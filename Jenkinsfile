@@ -156,21 +156,21 @@ pipeline {
                             TF_PATH="repository/infrastructure/terraform/ap-south-1-uat"
                         fi
                         cd "$TF_PATH"
-                        WORK_DIR="$PWD"
 
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
 
-                        if command -v terraform >/dev/null 2>&1; then
-                            terraform init
-                            terraform validate
-                            terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
-                            terraform apply -auto-approve tfplan
-                        else
-                            echo "Terraform CLI container fallback with shared volumes..."
-                            docker run --rm --volumes-from jenkins-server -w "$WORK_DIR" hashicorp/terraform:latest init
-                            docker run --rm --volumes-from jenkins-server -w "$WORK_DIR" hashicorp/terraform:latest apply -auto-approve -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars"
+                        if ! command -v terraform >/dev/null 2>&1; then
+                            echo "Downloading Terraform CLI binary..."
+                            wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip || true
+                            unzip -o terraform_1.8.5_linux_amd64.zip -d /usr/local/bin/ || true
+                            rm -f terraform_1.8.5_linux_amd64.zip || true
                         fi
+
+                        terraform init
+                        terraform validate
+                        terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
+                        terraform apply -auto-approve tfplan
                     '''
                 }
             }
