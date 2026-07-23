@@ -1,6 +1,4 @@
 # ── PgBouncer Security Group (Kept to ensure zero-deletion stability) ─────────
-# Keeping this security group in code prevents Terraform from attempting to delete
-# sg-0cc77c7a068fd7b73 on AWS, completely eliminating the 15-minute dependency timeout.
 resource "aws_security_group" "pgbouncer" {
   name        = "ai-docs-pgbouncer-sg-${var.environment}"
   description = "Security group for PgBouncer connection pooler"
@@ -32,7 +30,7 @@ module "pgbouncer" {
 
   environment        = var.environment
   vpc_id            = aws_vpc.main.id
-  private_subnet_ids = aws_subnet.private_app[*].id
+  private_subnet_ids = tolist(aws_subnet.private_app[*].id)
   security_group_id  = aws_security_group.ecs.id
   db_host            = aws_docdb_cluster.docdb.endpoint
 }
