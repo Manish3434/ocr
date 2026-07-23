@@ -12,6 +12,8 @@ pipeline {
         choice(name: 'ENVIRONMENT', choices: ['uat', 'prod'], description: 'Deployment Target Environment')
         booleanParam(name: 'APPLY_TERRAFORM', defaultValue: true, description: 'Run Terraform Apply during build (AWS mode)')
         booleanParam(name: 'FORCE_ECS_DEPLOY', defaultValue: true, description: 'Force ECS Service Rolling Deployment (AWS mode)')
+        string(name: 'AWS_ACCESS_KEY_ID_OVERRIDE', defaultValue: '', description: 'Optional: Manual AWS Access Key ID override (leave blank to use server default)')
+        password(name: 'AWS_SECRET_ACCESS_KEY_OVERRIDE', defaultValue: '', description: 'Optional: Manual AWS Secret Access Key override (leave blank to use server default)')
     }
 
     // ── ⚙️ AWS TOKYO CONFIGURATION ───────────────────────────────────────────
@@ -72,8 +74,15 @@ pipeline {
             steps {
                 script {
                     echo "🔑 Logging into AWS ECR for Tokyo region ${env.AWS_REGION}..."
-                    sh '''
-                        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                    sh """
+                        if [ -n "${params.AWS_ACCESS_KEY_ID_OVERRIDE}" ] && [ -n "${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}" ]; then
+                            echo "🔑 Using Manual AWS Credentials from Build Parameters..."
+                            export AWS_ACCESS_KEY_ID="${params.AWS_ACCESS_KEY_ID_OVERRIDE}"
+                            export AWS_SECRET_ACCESS_KEY="${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}"
+                        else
+                            echo "🔑 Using Server Credentials from /var/jenkins_home/.aws/credentials..."
+                            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        fi
                         export AWS_DEFAULT_REGION="ap-northeast-1"
                         
                         DOCKER_CMD="docker"
@@ -85,16 +94,16 @@ pipeline {
                         REGISTRY="962415228730.dkr.ecr.ap-northeast-1.amazonaws.com"
 
                         if command -v aws >/dev/null 2>&1; then
-                            aws ecr create-repository --repository-name ai-docs-backend --region "$REGION" || true
-                            aws ecr create-repository --repository-name ai-docs-frontend --region "$REGION" || true
-                            aws ecr get-login-password --region "$REGION" | $DOCKER_CMD login --username AWS --password-stdin "$REGISTRY"
+                            aws ecr create-repository --repository-name ai-docs-backend --region "\$REGION" || true
+                            aws ecr create-repository --repository-name ai-docs-frontend --region "\$REGION" || true
+                            aws ecr get-login-password --region "\$REGION" | \$DOCKER_CMD login --username AWS --password-stdin "\$REGISTRY"
                         else
                             echo "AWS CLI container fallback for login..."
-                            $DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr create-repository --repository-name ai-docs-backend --region "$REGION" || true
-                            $DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr create-repository --repository-name ai-docs-frontend --region "$REGION" || true
-                            $DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr get-login-password --region "$REGION" | $DOCKER_CMD login --username AWS --password-stdin "$REGISTRY"
+                            \$DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr create-repository --repository-name ai-docs-backend --region "\$REGION" || true
+                            \$DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr create-repository --repository-name ai-docs-frontend --region "\$REGION" || true
+                            \$DOCKER_CMD run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecr get-login-password --region "\$REGION" | \$DOCKER_CMD login --username AWS --password-stdin "\$REGISTRY"
                         fi
-                    '''
+                    """
                 }
             }
         }
@@ -149,15 +158,20 @@ pipeline {
             steps {
                 script {
                     echo "🏗️ Running Terraform Plan & Apply..."
-                    sh '''
-                        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                    sh """
+                        if [ -n "${params.AWS_ACCESS_KEY_ID_OVERRIDE}" ] && [ -n "${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}" ]; then
+                            export AWS_ACCESS_KEY_ID="${params.AWS_ACCESS_KEY_ID_OVERRIDE}"
+                            export AWS_SECRET_ACCESS_KEY="${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}"
+                        else
+                            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        fi
                         export AWS_DEFAULT_REGION="ap-northeast-1"
 
                         TF_PATH="infrastructure/terraform/ap-south-1-uat"
                         if [ -d "repository/infrastructure/terraform/ap-south-1-uat" ]; then
                             TF_PATH="repository/infrastructure/terraform/ap-south-1-uat"
                         fi
-                        cd "$TF_PATH"
+                        cd "\$TF_PATH"
 
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
@@ -174,11 +188,11 @@ pipeline {
                             TF_CMD="./terraform"
                         fi
 
-                        $TF_CMD init
-                        $TF_CMD validate
-                        $TF_CMD plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
-                        $TF_CMD apply -auto-approve tfplan
-                    '''
+                        \$TF_CMD init
+                        \$TF_CMD validate
+                        \$TF_CMD plan -var="aws_region=\$REGION" -var-file="\$ENV_NAME.tfvars" -out=tfplan
+                        \$TF_CMD apply -auto-approve tfplan
+                    """
                 }
             }
         }
@@ -190,21 +204,26 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Triggering Zero-Downtime Rolling Update on AWS ECS Tokyo..."
-                    sh '''
-                        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                    sh """
+                        if [ -n "${params.AWS_ACCESS_KEY_ID_OVERRIDE}" ] && [ -n "${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}" ]; then
+                            export AWS_ACCESS_KEY_ID="${params.AWS_ACCESS_KEY_ID_OVERRIDE}"
+                            export AWS_SECRET_ACCESS_KEY="${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}"
+                        else
+                            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        fi
                         export AWS_DEFAULT_REGION="ap-northeast-1"
 
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
 
                         if command -v aws >/dev/null 2>&1; then
-                            aws ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
-                            aws ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
+                            aws ecs update-service --cluster "ai-docs-cluster-\$ENV_NAME" --service "ai-docs-backend-\$ENV_NAME" --force-new-deployment --region "\$REGION" || true
+                            aws ecs update-service --cluster "ai-docs-cluster-\$ENV_NAME" --service "ai-docs-frontend-\$ENV_NAME" --force-new-deployment --region "\$REGION" || true
                         else
-                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
-                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
+                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-\$ENV_NAME" --service "ai-docs-backend-\$ENV_NAME" --force-new-deployment --region "\$REGION" || true
+                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-\$ENV_NAME" --service "ai-docs-frontend-\$ENV_NAME" --force-new-deployment --region "\$REGION" || true
                         fi
-                    '''
+                    """
                 }
             }
         }
@@ -252,18 +271,23 @@ pipeline {
                 script {
                     if (params.DEPLOY_TARGET == 'aws_ecs') {
                         echo "🩺 Probing AWS ALB Healthcheck..."
-                        sh '''
-                            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        sh """
+                            if [ -n "${params.AWS_ACCESS_KEY_ID_OVERRIDE}" ] && [ -n "${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}" ]; then
+                                export AWS_ACCESS_KEY_ID="${params.AWS_ACCESS_KEY_ID_OVERRIDE}"
+                                export AWS_SECRET_ACCESS_KEY="${params.AWS_SECRET_ACCESS_KEY_OVERRIDE}"
+                            else
+                                unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                            fi
                             export AWS_DEFAULT_REGION="ap-northeast-1"
                             REGION="ap-northeast-1"
                             ENV_NAME="uat"
-                            ALB_DNS=$(aws elbv2 describe-load-balancers --names "ai-docs-alb-$ENV_NAME" --region "$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
-                            if [ -n "$ALB_DNS" ]; then
-                                curl --fail --retry 5 --retry-delay 10 "http://$ALB_DNS/api/health" || echo "AWS ALB Probe Completed!"
+                            ALB_DNS=\$(aws elbv2 describe-load-balancers --names "ai-docs-alb-\$ENV_NAME" --region "\$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
+                            if [ -n "\$ALB_DNS" ]; then
+                                curl --fail --retry 5 --retry-delay 10 "http://\$ALB_DNS/api/health" || echo "AWS ALB Probe Completed!"
                             else
                                 echo "AWS ALB DNS not found yet - skipping probe."
                             fi
-                        '''
+                        """
                     } else {
                         echo "🩺 Probing VPS Healthcheck at http://${env.VPS_IP}:8080..."
                         sh "curl --fail --retry 5 --retry-delay 5 http://${env.VPS_IP}:8080/ || echo 'VPS Probe Passed!'"
