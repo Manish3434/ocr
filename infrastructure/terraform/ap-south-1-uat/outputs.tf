@@ -9,8 +9,8 @@ output "alb_dns_name" {
 }
 
 output "application_url" {
-  description = "The HTTPS URL of the application"
-  value       = "https://${var.domain_name}"
+  description = "The HTTP URL of the application via ALB (no domain/HTTPS configured)"
+  value       = "http://${aws_lb.main.dns_name}"
 }
 
 output "ecs_cluster_name" {
