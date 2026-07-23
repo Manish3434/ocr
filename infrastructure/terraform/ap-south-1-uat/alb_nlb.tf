@@ -24,7 +24,7 @@ resource "aws_lb_target_group" "frontend" {
 
   health_check {
     enabled             = true
-    path                = "/"
+    path                = "/health"
     port                = "8080"
     protocol            = "HTTP"
     interval            = 15
