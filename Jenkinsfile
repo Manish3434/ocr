@@ -190,6 +190,7 @@ pipeline {
 
                         \$TF_CMD init
                         \$TF_CMD validate
+                        rm -f tfplan
                         \$TF_CMD plan -var="aws_region=\$REGION" -var-file="\$ENV_NAME.tfvars" -out=tfplan
                         \$TF_CMD apply -auto-approve tfplan
                     """

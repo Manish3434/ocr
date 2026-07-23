@@ -104,6 +104,14 @@ resource "aws_security_group" "db" {
     security_groups = [aws_security_group.ecs.id]
   }
 
+  ingress {
+    description     = "Allow traffic from PgBouncer Pooler"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [module.pgbouncer.aws_security_group.pgbouncer.id]
+  }
+
   egress {
     description = "Disallow outbound"
     from_port   = 0
