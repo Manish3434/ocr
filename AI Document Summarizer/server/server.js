@@ -103,12 +103,7 @@ const buildAllowedOrigins = () => {
 const ALLOWED_ORIGINS = buildAllowedOrigins();
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow server-to-server / curl requests (no Origin header)
-    if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin '${origin}' not allowed`));
-  },
+  origin: true, // Dynamically reflect request origin for 100% CORS & cookie session compatibility
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -120,6 +115,7 @@ app.options(/(.*)/, cors(corsOptions));   // Express 5-compatible preflight
 
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/api/health", (req, res) => {
   const dbState = mongoose.connection.readyState;
