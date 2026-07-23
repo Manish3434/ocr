@@ -160,18 +160,22 @@ pipeline {
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
 
+                        TF_CMD="terraform"
                         if ! command -v terraform >/dev/null 2>&1; then
-                            echo "Downloading Terraform CLI binary via curl & python..."
-                            curl -sSL -o terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
-                            python3 -c "import zipfile; zipfile.ZipFile('terraform.zip').extractall('/usr/local/bin')" || (apt-get update && apt-get install -y unzip && unzip -o terraform.zip -d /usr/local/bin/)
-                            chmod +x /usr/local/bin/terraform || true
-                            rm -f terraform.zip
+                            if [ ! -f "./terraform" ]; then
+                                echo "Downloading local Terraform CLI binary..."
+                                curl -sSL -o terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+                                python3 -c "import zipfile; zipfile.ZipFile('terraform.zip').extractall('.')"
+                                chmod +x ./terraform
+                                rm -f terraform.zip
+                            fi
+                            TF_CMD="./terraform"
                         fi
 
-                        terraform init
-                        terraform validate
-                        terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
-                        terraform apply -auto-approve tfplan
+                        $TF_CMD init
+                        $TF_CMD validate
+                        $TF_CMD plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
+                        $TF_CMD apply -auto-approve tfplan
                     '''
                 }
             }
