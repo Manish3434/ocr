@@ -74,6 +74,7 @@ pipeline {
                     echo "🔑 Logging into AWS ECR for Tokyo region ${env.AWS_REGION}..."
                     sh '''
                         unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        export AWS_DEFAULT_REGION="ap-northeast-1"
                         
                         DOCKER_CMD="docker"
                         if ! command -v docker >/dev/null 2>&1; then
@@ -150,6 +151,7 @@ pipeline {
                     echo "🏗️ Running Terraform Plan & Apply..."
                     sh '''
                         unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        export AWS_DEFAULT_REGION="ap-northeast-1"
 
                         TF_PATH="infrastructure/terraform/ap-south-1-uat"
                         if [ -d "repository/infrastructure/terraform/ap-south-1-uat" ]; then
@@ -190,6 +192,7 @@ pipeline {
                     echo "🚀 Triggering Zero-Downtime Rolling Update on AWS ECS Tokyo..."
                     sh '''
                         unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                        export AWS_DEFAULT_REGION="ap-northeast-1"
 
                         REGION="ap-northeast-1"
                         ENV_NAME="uat"
@@ -251,6 +254,7 @@ pipeline {
                         echo "🩺 Probing AWS ALB Healthcheck..."
                         sh '''
                             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+                            export AWS_DEFAULT_REGION="ap-northeast-1"
                             REGION="ap-northeast-1"
                             ENV_NAME="uat"
                             ALB_DNS=$(aws elbv2 describe-load-balancers --names "ai-docs-alb-$ENV_NAME" --region "$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
