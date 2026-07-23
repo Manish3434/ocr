@@ -1,0 +1,83 @@
+variable "aws_region" {
+  description = "AWS region for deployment"
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "environment" {
+  description = "Deployment environment name"
+  type        = string
+  default     = "uat"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "domain_name" {
+  description = "Primary domain name for the application"
+  type        = string
+  default     = "precisqo.com"
+}
+
+variable "backend_image" {
+  description = "ECR image URL for the backend Node.js container"
+  type        = string
+  default     = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-backend:latest"
+}
+
+variable "frontend_image" {
+  description = "ECR image URL for the frontend React/Nginx container"
+  type        = string
+  default     = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-frontend:latest"
+}
+
+variable "ecs_backend_cpu" {
+  description = "CPU units for backend ECS task"
+  type        = number
+  default     = 512
+}
+
+variable "ecs_backend_memory" {
+  description = "Memory (MB) for backend ECS task"
+  type        = number
+  default     = 1024
+}
+
+variable "ecs_frontend_cpu" {
+  description = "CPU units for frontend ECS task"
+  type        = number
+  default     = 256
+}
+
+variable "ecs_frontend_memory" {
+  description = "Memory (MB) for frontend ECS task"
+  type        = number
+  default     = 512
+}
+
+variable "ecs_min_capacity" {
+  description = "Minimum capacity of ECS tasks for autoscaling"
+  type        = number
+  default     = 2
+}
+
+variable "ecs_max_capacity" {
+  description = "Maximum capacity of ECS tasks for autoscaling"
+  type        = number
+  default     = 10
+}
+
+variable "db_instance_class" {
+  description = "Instance class for relational database / DocumentDB cluster"
+  type        = string
+  default     = "db.r6g.large"
+}
+
+variable "redis_node_type" {
+  description = "ElastiCache Redis node type"
+  type        = string
+  default     = "cache.t4g.medium"
+}

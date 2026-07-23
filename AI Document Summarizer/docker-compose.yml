@@ -1,0 +1,119 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: ai-docs-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-ai-docs-summarizer}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - ai-docs-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: ai-docs-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --loglevel notice
+    volumes:
+      - redis-data:/data
+    networks:
+      - ai-docs-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ai-docs-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/ai-docs-summarizer}
+      REDIS_URI: ${REDIS_URI:-redis://redis:6379}
+      MONGO_TLS: ${MONGO_TLS:-false}
+      SESSION_SECRET: ${SESSION_SECRET:-production-change-this-secret-key-32-chars}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:5173}
+      SERVER_URL: ${SERVER_URL:-http://localhost:8080}
+    volumes:
+      - backend-uploads:/app/uploads
+    networks:
+      - ai-docs-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./ai-document-summarizer
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /
+    container_name: ai-docs-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${PORT_HTTP:-8080}:8080"
+    networks:
+      - ai-docs-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
+  backend-uploads:
+    driver: local
+
+networks:
+  ai-docs-network:
+    driver: bridge

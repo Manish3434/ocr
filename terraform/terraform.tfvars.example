@@ -1,0 +1,81 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and update with your values
+
+aws_region     = "us-east-1"
+environment    = "dev"
+project_name   = "ai-document-summarizer"
+
+# VPC Configuration
+vpc_cidr              = "10.0.0.0/16"
+availability_zones    = ["us-east-1a", "us-east-1b"]
+private_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+public_subnet_cidrs   = ["10.0.101.0/24", "10.0.102.0/24"]
+
+# Database Configuration
+db_engine              = "postgres"
+db_engine_version      = "15.4"
+db_instance_class      = "db.t3.micro"
+db_allocated_storage   = 20
+db_name                = "documentdb"
+db_username            = "admin"
+db_password            = "ChangeMe123456"  # IMPORTANT: Change this in production
+db_skip_final_snapshot = true  # Set to false in production
+db_backup_retention_period = 7
+
+# ElastiCache (Redis) Configuration
+elasticache_engine          = "redis"
+elasticache_engine_version  = "7.0"
+elasticache_node_type       = "cache.t3.micro"
+elasticache_num_cache_nodes = 1
+
+# ECS Configuration
+ecs_launch_type        = "FARGATE"
+app_cpu                = 256
+app_memory             = 512
+app_desired_count      = 2
+server_image           = "account-id.dkr.ecr.us-east-1.amazonaws.com/server:latest"
+frontend_image         = "account-id.dkr.ecr.us-east-1.amazonaws.com/frontend:latest"
+server_container_port  = 5000
+frontend_container_port = 3000
+
+# ALB Configuration
+enable_alb      = true
+alb_target_type = "ip"
+
+# Security
+enable_https    = true
+certificate_arn = ""  # Add your ACM certificate ARN here
+
+# CloudWatch Logs
+log_retention_days = 7
+
+# Scaling Configuration
+enable_autoscaling       = true
+min_capacity             = 1
+max_capacity             = 4
+target_cpu_utilization   = 70
+
+# S3 Configuration
+enable_s3_uploads         = true
+s3_bucket_name            = "ai-document-summarizer-uploads-${data.aws_caller_identity.current.account_id}"
+s3_upload_expiration_days = 0  # Never expire
+
+# CloudFront Configuration
+enable_cloudfront = false
+
+# Email Configuration
+email_from_address = "noreply@example.com"
+
+# API Configuration
+api_rate_limit = 100
+
+# Monitoring
+enable_monitoring = true
+alarm_email       = "admin@example.com"
+
+# Additional Tags
+tags = {
+  Team        = "DevOps"
+  CostCenter  = "Engineering"
+  ManagedBy   = "Terraform"
+}

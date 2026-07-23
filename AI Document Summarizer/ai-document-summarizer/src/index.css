@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* ── Theme tokens ── */
+:root {
+  --bg:          #F8FAFC;
+  --card:        #FFFFFF;
+  --card-rgb:    255, 255, 255; 
+  --secondary:   #F1F5F9;
+  --border:      #E2E8F0;
+  --primary:     #4F46E5;
+  --primary-rgb: 79, 70, 229;
+  --text:        #0F172A;
+  --muted:       #64748B;
+  --success:     #10B981;
+  --warning:     #F59E0B;
+  --danger:      #EF4444;
+  --shadow:      0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  --shadow-md:   0 4px 24px rgba(0,0,0,.08);
+  --tooltip-bg:  #FFFFFF;
+  --success:     #22c55e;             /* ← NEW — used by Footer health dot */
+  --danger:      #ef4444;  
+}
+
+.dark {
+  --bg:          #0B1120;
+  --card:        #111827;
+  --secondary:   #1E293B;
+  --border:      rgba(255,255,255,0.08);
+  --primary:     #6366F1;
+  --primary-rgb: 99, 102, 241;
+  --text:        #FFFFFF;
+  --muted:       #94A3B8;
+  --shadow:      0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  --shadow-md:   0 4px 24px rgba(0,0,0,.5);
+  --tooltip-bg:  #1E293B;
+  --card-rgb:    17, 24, 39;
+  --success:     #4ade80;             /* ← NEW */
+  --danger:      #f87171;             /* ← NEW */
+}
+
+* { transition: background-color .2s, border-color .2s, color .15s; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Glass card */
+.glass {
+  background: rgba(var(--primary-rgb), .05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--primary-rgb), .12);
+}
+
+/* Animated gradient border */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 6s linear infinite; }
+
+/* Counter animation */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-countUp { animation: countUp .4s ease forwards; }
+
+/* Pulse dot */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(2.2);  opacity: 0; }
+}
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+
+/* ── Tailwind v4: explicit dark mode via class strategy ── */
+@layer utilities {
+  @media (prefers-color-scheme: dark) {
+    .dark { color-scheme: dark; }
+  }
+}
+
+/* ── Fix arbitrary grid layout for side panel ── */
+.xl\:grid-cols-side {
+  grid-template-columns: 1fr 320px;
+}
+
+/* ── Dashboard responsive main grid ── */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1280px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr 320px;
+  }
+}
