@@ -10,25 +10,23 @@ pipeline {
     parameters {
         choice(name: 'DEPLOY_TARGET', choices: ['vps', 'aws_ecs'], description: 'Deployment Target Platform')
         choice(name: 'ENVIRONMENT', choices: ['uat', 'prod'], description: 'Deployment Target Environment')
-        string(name: 'AWS_ACCESS_KEY_ID', defaultValue: 'AKIA6AFDK645D2443NXS', description: 'AWS Access Key ID')
-        password(name: 'AWS_SECRET_ACCESS_KEY', defaultValue: '', description: 'AWS Secret Access Key')
+        string(name: 'AWS_ACCESS_KEY_ID', defaultValue: '', description: 'AWS Access Key ID (Optional override)')
+        password(name: 'AWS_SECRET_ACCESS_KEY', defaultValue: '', description: 'AWS Secret Access Key (Optional override)')
         booleanParam(name: 'APPLY_TERRAFORM', defaultValue: true, description: 'Run Terraform Apply during build (AWS mode)')
         booleanParam(name: 'FORCE_ECS_DEPLOY', defaultValue: true, description: 'Force ECS Service Rolling Deployment (AWS mode)')
     }
 
     // ── ⚙️ AWS TOKYO CONFIGURATION ───────────────────────────────────────────
     environment {
-        AWS_REGION            = 'ap-northeast-1'
-        AWS_ACCOUNT_ID        = '962415228730'
-        AWS_ACCESS_KEY_ID     = "${params.AWS_ACCESS_KEY_ID}"
-        AWS_SECRET_ACCESS_KEY = "${params.AWS_SECRET_ACCESS_KEY}"
-        GITHUB_REPO_URL       = 'https://github.com/Manish3434/ocr.git'
-        VPS_IP                = '158.220.99.156'
+        AWS_REGION      = 'ap-northeast-1'
+        AWS_ACCOUNT_ID  = '962415228730'
+        GITHUB_REPO_URL = 'https://github.com/Manish3434/ocr.git'
+        VPS_IP          = '158.220.99.156'
         
-        ECR_REGISTRY          = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-        BACKEND_IMAGE         = "${ECR_REGISTRY}/ai-docs-backend"
-        FRONTEND_IMAGE        = "${ECR_REGISTRY}/ai-docs-frontend"
-        IMAGE_TAG             = "${env.BUILD_NUMBER}"
+        ECR_REGISTRY    = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        BACKEND_IMAGE   = "${ECR_REGISTRY}/ai-docs-backend"
+        FRONTEND_IMAGE  = "${ECR_REGISTRY}/ai-docs-frontend"
+        IMAGE_TAG       = "${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -76,29 +74,39 @@ pipeline {
             steps {
                 script {
                     echo "🔑 Logging into AWS ECR for Tokyo region ${env.AWS_REGION}..."
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                        "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                        "ECR_REGISTRY=${env.ECR_REGISTRY}"
-                    ]) {
+                    def runEcrLogin = {
                         sh '''
                             DOCKER_CMD="docker"
                             if ! command -v docker >/dev/null 2>&1; then
                                 DOCKER_CMD="sudo docker"
                             fi
 
+                            REGION="${AWS_REGION:-ap-northeast-1}"
+                            REGISTRY="${ECR_REGISTRY:-962415228730.dkr.ecr.ap-northeast-1.amazonaws.com}"
+
                             if command -v aws >/dev/null 2>&1; then
-                                aws ecr create-repository --repository-name ai-docs-backend --region "$AWS_DEFAULT_REGION" || true
-                                aws ecr create-repository --repository-name ai-docs-frontend --region "$AWS_DEFAULT_REGION" || true
-                                aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | $DOCKER_CMD login --username AWS --password-stdin "$ECR_REGISTRY"
+                                aws ecr create-repository --repository-name ai-docs-backend --region "$REGION" || true
+                                aws ecr create-repository --repository-name ai-docs-frontend --region "$REGION" || true
+                                aws ecr get-login-password --region "$REGION" | $DOCKER_CMD login --username AWS --password-stdin "$REGISTRY"
                             else
                                 echo "AWS CLI container fallback for login..."
-                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" amazon/aws-cli ecr create-repository --repository-name ai-docs-backend --region "$AWS_DEFAULT_REGION" || true
-                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" amazon/aws-cli ecr create-repository --repository-name ai-docs-frontend --region "$AWS_DEFAULT_REGION" || true
-                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" amazon/aws-cli ecr get-login-password --region "$AWS_DEFAULT_REGION" | $DOCKER_CMD login --username AWS --password-stdin "$ECR_REGISTRY"
+                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" amazon/aws-cli ecr create-repository --repository-name ai-docs-backend --region "$REGION" || true
+                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" amazon/aws-cli ecr create-repository --repository-name ai-docs-frontend --region "$REGION" || true
+                                $DOCKER_CMD run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" amazon/aws-cli ecr get-login-password --region "$REGION" | $DOCKER_CMD login --username AWS --password-stdin "$REGISTRY"
                             fi
                         '''
+                    }
+
+                    if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                        withEnv([
+                            "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                            "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                            "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                        ]) {
+                            runEcrLogin()
+                        }
+                    } else {
+                        runEcrLogin()
                     }
                 }
             }
@@ -113,13 +121,7 @@ pipeline {
                     steps {
                         script {
                             echo "🐳 Building Backend Docker Image..."
-                            withEnv([
-                                "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                                "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                                "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                                "BACKEND_IMAGE=${env.BACKEND_IMAGE}",
-                                "IMAGE_TAG=${env.IMAGE_TAG}"
-                            ]) {
+                            def runBackendBuild = {
                                 sh '''
                                     TARGET_DIR="AI Document Summarizer/server"
                                     if [ -d "repository/AI Document Summarizer/server" ]; then
@@ -131,6 +133,18 @@ pipeline {
                                     docker push "$BACKEND_IMAGE:latest"
                                 '''
                             }
+
+                            if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                                withEnv([
+                                    "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                                    "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                                    "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                                ]) {
+                                    runBackendBuild()
+                                }
+                            } else {
+                                runBackendBuild()
+                            }
                         }
                     }
                 }
@@ -139,13 +153,7 @@ pipeline {
                     steps {
                         script {
                             echo "🐳 Building Frontend Docker Image..."
-                            withEnv([
-                                "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                                "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                                "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                                "FRONTEND_IMAGE=${env.FRONTEND_IMAGE}",
-                                "IMAGE_TAG=${env.IMAGE_TAG}"
-                            ]) {
+                            def runFrontendBuild = {
                                 sh '''
                                     TARGET_DIR="AI Document Summarizer/ai-document-summarizer"
                                     if [ -d "repository/AI Document Summarizer/ai-document-summarizer" ]; then
@@ -156,6 +164,18 @@ pipeline {
                                     docker push "$FRONTEND_IMAGE:$IMAGE_TAG"
                                     docker push "$FRONTEND_IMAGE:latest"
                                 '''
+                            }
+
+                            if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                                withEnv([
+                                    "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                                    "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                                    "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                                ]) {
+                                    runFrontendBuild()
+                                }
+                            } else {
+                                runFrontendBuild()
                             }
                         }
                     }
@@ -170,12 +190,7 @@ pipeline {
             steps {
                 script {
                     echo "🏗️ Running Terraform Plan & Apply..."
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                        "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                        "ENVIRONMENT=${params.ENVIRONMENT}"
-                    ]) {
+                    def runTerraform = {
                         sh '''
                             TF_PATH="infrastructure/terraform/ap-south-1-uat"
                             if [ -d "repository/infrastructure/terraform/ap-south-1-uat" ]; then
@@ -183,17 +198,32 @@ pipeline {
                             fi
                             cd "$TF_PATH"
 
+                            REGION="${AWS_REGION:-ap-northeast-1}"
+                            ENV_NAME="${ENVIRONMENT:-uat}"
+
                             if command -v terraform >/dev/null 2>&1; then
                                 terraform init
                                 terraform validate
-                                terraform plan -var="aws_region=$AWS_DEFAULT_REGION" -var-file="$ENVIRONMENT.tfvars" -out=tfplan
+                                terraform plan -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars" -out=tfplan
                                 terraform apply -auto-approve tfplan
                             else
                                 echo "Terraform CLI container fallback..."
-                                docker run --rm -v "$PWD:/workspace" -w /workspace -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" hashicorp/terraform:latest init
-                                docker run --rm -v "$PWD:/workspace" -w /workspace -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" hashicorp/terraform:latest apply -auto-approve -var="aws_region=$AWS_DEFAULT_REGION" -var-file="$ENVIRONMENT.tfvars"
+                                docker run --rm -v "$PWD:/workspace" -w /workspace -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" hashicorp/terraform:latest init
+                                docker run --rm -v "$PWD:/workspace" -w /workspace -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" hashicorp/terraform:latest apply -auto-approve -var="aws_region=$REGION" -var-file="$ENV_NAME.tfvars"
                             fi
                         '''
+                    }
+
+                    if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                        withEnv([
+                            "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                            "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                            "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                        ]) {
+                            runTerraform()
+                        }
+                    } else {
+                        runTerraform()
                     }
                 }
             }
@@ -206,21 +236,31 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Triggering Zero-Downtime Rolling Update on AWS ECS Tokyo..."
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                        "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                        "ENVIRONMENT=${params.ENVIRONMENT}"
-                    ]) {
+                    def runEcsDeploy = {
                         sh '''
+                            REGION="${AWS_REGION:-ap-northeast-1}"
+                            ENV_NAME="${ENVIRONMENT:-uat}"
+
                             if command -v aws >/dev/null 2>&1; then
-                                aws ecs update-service --cluster "ai-docs-cluster-$ENVIRONMENT" --service "ai-docs-backend-$ENVIRONMENT" --force-new-deployment --region "$AWS_DEFAULT_REGION" || true
-                                aws ecs update-service --cluster "ai-docs-cluster-$ENVIRONMENT" --service "ai-docs-frontend-$ENVIRONMENT" --force-new-deployment --region "$AWS_DEFAULT_REGION" || true
+                                aws ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
+                                aws ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
                             else
-                                docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENVIRONMENT" --service "ai-docs-backend-$ENVIRONMENT" --force-new-deployment --region "$AWS_DEFAULT_REGION" || true
-                                docker run --rm -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENVIRONMENT" --service "ai-docs-frontend-$ENVIRONMENT" --force-new-deployment --region "$AWS_DEFAULT_REGION" || true
+                                docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
+                                docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$REGION" amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
                             fi
                         '''
+                    }
+
+                    if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                        withEnv([
+                            "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                            "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                            "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                        ]) {
+                            runEcsDeploy()
+                        }
+                    } else {
+                        runEcsDeploy()
                     }
                 }
             }
@@ -269,20 +309,29 @@ pipeline {
                 script {
                     if (params.DEPLOY_TARGET == 'aws_ecs') {
                         echo "🩺 Probing AWS ALB Healthcheck..."
-                        withEnv([
-                            "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                            "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
-                            "AWS_DEFAULT_REGION=${env.AWS_REGION}",
-                            "ENVIRONMENT=${params.ENVIRONMENT}"
-                        ]) {
+                        def runAlbProbe = {
                             sh '''
-                                ALB_DNS=$(aws elbv2 describe-load-balancers --names "ai-docs-alb-$ENVIRONMENT" --region "$AWS_DEFAULT_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
+                                REGION="${AWS_REGION:-ap-northeast-1}"
+                                ENV_NAME="${ENVIRONMENT:-uat}"
+                                ALB_DNS=$(aws elbv2 describe-load-balancers --names "ai-docs-alb-$ENV_NAME" --region "$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
                                 if [ -n "$ALB_DNS" ]; then
                                     curl --fail --retry 5 --retry-delay 10 "http://$ALB_DNS/api/health" || echo "AWS ALB Probe Completed!"
                                 else
                                     echo "AWS ALB DNS not found yet - skipping probe."
                                 fi
                             '''
+                        }
+
+                        if (params.AWS_ACCESS_KEY_ID && params.AWS_SECRET_ACCESS_KEY) {
+                            withEnv([
+                                "AWS_ACCESS_KEY_ID=${params.AWS_ACCESS_KEY_ID}",
+                                "AWS_SECRET_ACCESS_KEY=${params.AWS_SECRET_ACCESS_KEY}",
+                                "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                            ]) {
+                                runAlbProbe()
+                            }
+                        } else {
+                            runAlbProbe()
                         }
                     } else {
                         echo "🩺 Probing VPS Healthcheck at http://${env.VPS_IP}:8080..."
