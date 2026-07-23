@@ -194,7 +194,7 @@ pipeline {
                             aws ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
                         else
                             docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
-                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-backend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
+                            docker run --rm -v /var/jenkins_home/.aws:/root/.aws amazon/aws-cli ecs update-service --cluster "ai-docs-cluster-$ENV_NAME" --service "ai-docs-frontend-$ENV_NAME" --force-new-deployment --region "$REGION" || true
                         fi
                     '''
                 }
