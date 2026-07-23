@@ -1,8 +1,7 @@
 # ── ALB Security Group ────────────────────────────────────────────────────
-# Accepts HTTP traffic from the public internet
 resource "aws_security_group" "alb" {
   name        = "ai-docs-alb-sg-${var.environment}"
-  description = "Allow inbound HTTP traffic to Application Load Balancer"
+  description = "Allow inbound HTTP/HTTPS traffic to Application Load Balancer"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -15,7 +14,7 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    description      = "Allow all outbound traffic to ECS tasks"
+    description      = "Allow all outbound traffic"
     from_port        = 0
     to_port          = 0
     protocol         = "-1"
@@ -29,15 +28,13 @@ resource "aws_security_group" "alb" {
 }
 
 # ── ECS Fargate Security Group ────────────────────────────────────────────
-# ECS tasks receive traffic only from ALB.
-# Outbound: allows pulling ECR images, calling DocumentDB, Redis, and AWS APIs via NAT.
 resource "aws_security_group" "ecs" {
   name        = "ai-docs-ecs-sg-${var.environment}"
-  description = "Allow traffic from ALB to ECS Fargate tasks - no EC2 required"
+  description = "Allow traffic from ALB to ECS tasks"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "Allow HTTP from ALB to Backend (port 5000)"
+    description     = "Allow HTTP traffic from ALB to Backend"
     from_port       = 5000
     to_port         = 5000
     protocol        = "tcp"
@@ -45,7 +42,7 @@ resource "aws_security_group" "ecs" {
   }
 
   ingress {
-    description     = "Allow HTTP from ALB to Frontend (port 8080)"
+    description     = "Allow HTTP traffic from ALB to Frontend"
     from_port       = 8080
     to_port         = 8080
     protocol        = "tcp"
@@ -53,7 +50,7 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
-    description      = "Allow all outbound - ECR image pulls, DocumentDB, Redis, AWS APIs"
+    description      = "Allow all outbound traffic for external API calls"
     from_port        = 0
     to_port          = 0
     protocol         = "-1"
@@ -67,14 +64,13 @@ resource "aws_security_group" "ecs" {
 }
 
 # ── Redis Security Group ───────────────────────────────────────────────────
-# Redis accepts connections only from ECS Fargate tasks
 resource "aws_security_group" "redis" {
   name        = "ai-docs-redis-sg-${var.environment}"
-  description = "Allow Redis traffic from ECS Fargate tasks only"
+  description = "Allow Redis traffic from ECS tasks only"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "Allow Redis (6379) from ECS Fargate Tasks"
+    description     = "Allow Redis from ECS Tasks"
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
@@ -82,7 +78,7 @@ resource "aws_security_group" "redis" {
   }
 
   egress {
-    description = "Deny outbound from Redis"
+    description = "Disallow outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -95,15 +91,13 @@ resource "aws_security_group" "redis" {
 }
 
 # ── DocumentDB Security Group ─────────────────────────────────────────────
-# DocumentDB accepts connections only from ECS Fargate tasks on port 27017
-# No EC2, no PgBouncer, no PostgreSQL — pure DocumentDB (MongoDB-compatible)
 resource "aws_security_group" "db" {
   name        = "ai-docs-db-sg-${var.environment}"
-  description = "Allow DocumentDB traffic from ECS Fargate tasks only"
+  description = "Allow database traffic from ECS tasks and PgBouncer pooler"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "Allow DocumentDB (27017) from ECS Fargate Tasks"
+    description     = "Allow MongoDB / DocumentDB traffic from ECS Tasks"
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
@@ -111,7 +105,7 @@ resource "aws_security_group" "db" {
   }
 
   egress {
-    description = "Deny outbound from DocumentDB"
+    description = "Disallow outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
