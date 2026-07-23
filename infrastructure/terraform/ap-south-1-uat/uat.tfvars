@@ -39,8 +39,9 @@ openai_api_key    = ""   # https://platform.openai.com/api-keys
 anthropic_api_key = ""   # https://console.anthropic.com
 
 # ── Email SMTP (fill in to enable email notifications)
-email_user = ""   # your Gmail address
-email_pass = ""   # Gmail App Password from https://myaccount.google.com/apppasswords
+email_user = "maneeskumar3434@gmail.com"
+email_pass = ""   # ⚠️  REQUIRED: Generate Gmail App Password at https://myaccount.google.com/apppasswords
+           # (NOT your Gmail login password - a 16-char app-specific password)
 
 # ── Cashfree Payment (fill in to enable payments)
 cashfree_app_id        = ""

@@ -44,7 +44,6 @@ const connectDB = async () => {
       family: 4,
       tls: useTls,
       tlsAllowInvalidCertificates: useTls && process.env.MONGO_TLS_ALLOW_INVALID_CERTS === "true",
-      retryWrites: true,
       w: 'majority'
     });
     console.log('✅ MongoDB connected successfully');
@@ -60,9 +59,6 @@ connectDB();
 app.set('trust proxy', 1);
 
 // CORS Configuration
-// Production: ALLOWED_ORIGINS is a comma-separated list of allowed origins,
-// e.g. "https://precisqo.com,https://www.precisqo.com,https://staging.precisqo.com"
-// Falls back to FRONTEND_URL for single-origin setups.
 const buildAllowedOrigins = () => {
   if (process.env.NODE_ENV !== "production") {
     return ["http://localhost:5173", "http://localhost:5174"];
@@ -107,6 +103,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+const isSecureCookie = process.env.COOKIE_SECURE === "true";
+
 app.use(session({
     secret: process.env.SESSION_SECRET || "a-very-long-random-string",
     resave: false,
@@ -114,9 +112,9 @@ app.use(session({
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days — prevents daily logouts
-      secure: NODE_ENV === "production",
+      secure: isSecureCookie,
       httpOnly: true,
-      sameSite: NODE_ENV === "production" ? "none" : "lax"
+      sameSite: isSecureCookie ? "none" : "lax"
     }
 }));
 
@@ -152,14 +150,23 @@ app.get("/auth/status", (req, res) => {
 
 app.get("/", (req, res) => res.send("Backend is Running!"));
 
-app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" }));
+app.get("/auth/google", (req, res, next) => {
+    if (!passport._strategies || !passport._strategies.google) {
+        return res.status(503).json({ message: "Google OAuth is not configured on this server." });
+    }
+    passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })(req, res, next);
+});
 
-app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: `${FRONTEND_URL}/login` }),
-  (req, res) => {
-    res.redirect(`${FRONTEND_URL}/?googleAuth=success`);
-  }
-);
+app.get("/auth/google/callback", (req, res, next) => {
+    if (!passport._strategies || !passport._strategies.google) {
+        return res.redirect(`${FRONTEND_URL}/login?error=oauth_unconfigured`);
+    }
+    passport.authenticate("google", { failureRedirect: `${FRONTEND_URL}/login` })(req, res, (err) => {
+        if (err) return next(err);
+        res.redirect(`${FRONTEND_URL}/?googleAuth=success`);
+    });
+});
+
 
 // NOTE: /auth/logout is handled as POST by authRoutes.js — no GET handler needed here.
 
