@@ -189,7 +189,7 @@ pipeline {
                         fi
 
                         \$TF_CMD init
-                        \$TF_CMD state rm module.pgbouncer.aws_security_group.pgbouncer || true
+                        \$TF_CMD state list | grep -i pgbouncer | xargs -r \$TF_CMD state rm || true
                         \$TF_CMD validate
                         rm -f tfplan
                         \$TF_CMD plan -var="aws_region=\$REGION" -var-file="\$ENV_NAME.tfvars" -out=tfplan
