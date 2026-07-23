@@ -161,10 +161,11 @@ pipeline {
                         ENV_NAME="uat"
 
                         if ! command -v terraform >/dev/null 2>&1; then
-                            echo "Downloading Terraform CLI binary..."
-                            wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip || true
-                            unzip -o terraform_1.8.5_linux_amd64.zip -d /usr/local/bin/ || true
-                            rm -f terraform_1.8.5_linux_amd64.zip || true
+                            echo "Downloading Terraform CLI binary via curl & python..."
+                            curl -sSL -o terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+                            python3 -c "import zipfile; zipfile.ZipFile('terraform.zip').extractall('/usr/local/bin')" || (apt-get update && apt-get install -y unzip && unzip -o terraform.zip -d /usr/local/bin/)
+                            chmod +x /usr/local/bin/terraform || true
+                            rm -f terraform.zip
                         fi
 
                         terraform init
