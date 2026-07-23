@@ -20,8 +20,3 @@ resource "aws_elasticache_replication_group" "redis" {
     Name = "ai-docs-redis-${var.environment}"
   }
 }
-
-output "redis_primary_endpoint" {
-  description = "Primary endpoint address for Redis"
-  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
-}
