@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for deployment"
   type        = string
-  default     = "ap-south-1"
+  default     = "ap-northeast-1"
 }
 
 variable "environment" {
@@ -25,13 +25,13 @@ variable "domain_name" {
 variable "backend_image" {
   description = "ECR image URL for the backend Node.js container"
   type        = string
-  default     = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-backend:latest"
+  default     = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-backend:latest"
 }
 
 variable "frontend_image" {
   description = "ECR image URL for the frontend React/Nginx container"
   type        = string
-  default     = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/ai-docs-frontend:latest"
+  default     = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-frontend:latest"
 }
 
 variable "ecs_backend_cpu" {

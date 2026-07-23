@@ -7,7 +7,7 @@ ENV VITE_API_URL=$VITE_API_URL
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 COPY . .
 RUN npm run build

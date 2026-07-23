@@ -38,7 +38,8 @@ const GEMINI_KEYS = [
 ].filter(Boolean);
 
 if (GEMINI_KEYS.length === 0) {
-    throw new Error("No Gemini API keys found. Set GEMINI_KEY_1 … GEMINI_KEY_13 in your .env");
+    console.warn("⚠️ Warning: No Gemini API keys found in environment. Please set GEMINI_KEY_1 in your .env");
+    GEMINI_KEYS.push(process.env.GEMINI_KEY_FALLBACK || "placeholder-gemini-key");
 }
 
 // Export so usageTrackingService can read total key count

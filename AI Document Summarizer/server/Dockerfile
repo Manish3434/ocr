@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+# Install production dependencies
+RUN (npm ci --omit=dev --no-audit --no-fund || npm install --omit=dev --no-audit --no-fund) && npm cache clean --force
 
 # ── Stage 2: Production Runtime ─────────────────────────────────────────────
 FROM node:20-bookworm-slim AS runner
