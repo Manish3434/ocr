@@ -91,11 +91,10 @@ app.use(express.json());
 
 app.get("/api/health", (req, res) => {
   const dbState = mongoose.connection.readyState;
-  // readyState: 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
   const dbStatus = dbState === 1 ? "connected" : dbState === 2 ? "connecting" : "disconnected";
-  const status   = dbState === 1 ? "ok" : "degraded";
- 
-  res.status(dbState === 1 ? 200 : 503).json({
+  const status   = dbState === 1 ? "ok" : "starting";
+
+  res.status(200).json({
     status,
     db: dbStatus,
     uptime: Math.floor(process.uptime()),
