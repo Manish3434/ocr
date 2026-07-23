@@ -4,7 +4,6 @@ environment = "uat"
 
 # ── Network Configuration ──────────────────────────────────────────────────
 vpc_cidr    = "10.0.0.0/16"
-domain_name = "uat.precisqo.com"
 
 # ── Container Registry Images (ECR Tokyo) ──────────────────────────────────
 backend_image  = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-backend:latest"

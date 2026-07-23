@@ -16,11 +16,6 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "domain_name" {
-  description = "Primary domain name for the application"
-  type        = string
-  default     = "precisqo.com"
-}
 
 variable "backend_image" {
   description = "ECR image URL for the backend Node.js container"
