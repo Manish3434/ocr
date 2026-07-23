@@ -10,21 +10,25 @@ pipeline {
     parameters {
         choice(name: 'DEPLOY_TARGET', choices: ['vps', 'aws_ecs'], description: 'Deployment Target Platform')
         choice(name: 'ENVIRONMENT', choices: ['uat', 'prod'], description: 'Deployment Target Environment')
+        string(name: 'AWS_ACCESS_KEY_ID', defaultValue: 'AKIA6AFDK645D2443NXS', description: 'AWS Access Key ID')
+        password(name: 'AWS_SECRET_ACCESS_KEY', defaultValue: '', description: 'AWS Secret Access Key')
         booleanParam(name: 'APPLY_TERRAFORM', defaultValue: true, description: 'Run Terraform Apply during build (AWS mode)')
         booleanParam(name: 'FORCE_ECS_DEPLOY', defaultValue: true, description: 'Force ECS Service Rolling Deployment (AWS mode)')
     }
 
     // ── ⚙️ AWS TOKYO CONFIGURATION ───────────────────────────────────────────
     environment {
-        AWS_REGION      = 'ap-northeast-1'
-        AWS_ACCOUNT_ID  = '962415228730'
-        GITHUB_REPO_URL = 'https://github.com/Manish3434/ocr.git'
-        VPS_IP          = '158.220.99.156'
+        AWS_REGION            = 'ap-northeast-1'
+        AWS_ACCOUNT_ID        = '962415228730'
+        AWS_ACCESS_KEY_ID     = "${params.AWS_ACCESS_KEY_ID}"
+        AWS_SECRET_ACCESS_KEY = "${params.AWS_SECRET_ACCESS_KEY}"
+        GITHUB_REPO_URL       = 'https://github.com/Manish3434/ocr.git'
+        VPS_IP                = '158.220.99.156'
         
-        ECR_REGISTRY    = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-        BACKEND_IMAGE   = "${ECR_REGISTRY}/ai-docs-backend"
-        FRONTEND_IMAGE  = "${ECR_REGISTRY}/ai-docs-frontend"
-        IMAGE_TAG       = "${env.BUILD_NUMBER}"
+        ECR_REGISTRY          = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        BACKEND_IMAGE         = "${ECR_REGISTRY}/ai-docs-backend"
+        FRONTEND_IMAGE        = "${ECR_REGISTRY}/ai-docs-frontend"
+        IMAGE_TAG             = "${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -72,7 +76,11 @@ pipeline {
             steps {
                 script {
                     echo "🔑 Logging into AWS ECR for Tokyo region ${env.AWS_REGION}..."
-                    def runEcrLogin = {
+                    withEnv([
+                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                        "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                    ]) {
                         sh """
                             DOCKER_CMD="docker"
                             if ! command -v docker >/dev/null 2>&1; then
@@ -91,18 +99,6 @@ pipeline {
                             fi
                         """
                     }
-
-                    try {
-                        withCredentials([
-                            string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                        ]) {
-                            runEcrLogin()
-                        }
-                    } catch (e) {
-                        echo "Jenkins Credentials not found, proceeding with environment defaults..."
-                        runEcrLogin()
-                    }
                 }
             }
         }
@@ -116,7 +112,11 @@ pipeline {
                     steps {
                         script {
                             echo "🐳 Building Backend Docker Image..."
-                            def runBackendBuild = {
+                            withEnv([
+                                "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                                "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                                "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                            ]) {
                                 sh """
                                     TARGET_DIR="AI Document Summarizer/server"
                                     if [ -d "repository/AI Document Summarizer/server" ]; then
@@ -128,17 +128,6 @@ pipeline {
                                     docker push ${BACKEND_IMAGE}:latest
                                 """
                             }
-
-                            try {
-                                withCredentials([
-                                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                                ]) {
-                                    runBackendBuild()
-                                }
-                            } catch (e) {
-                                runBackendBuild()
-                            }
                         }
                     }
                 }
@@ -147,7 +136,11 @@ pipeline {
                     steps {
                         script {
                             echo "🐳 Building Frontend Docker Image..."
-                            def runFrontendBuild = {
+                            withEnv([
+                                "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                                "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                                "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                            ]) {
                                 sh """
                                     TARGET_DIR="AI Document Summarizer/ai-document-summarizer"
                                     if [ -d "repository/AI Document Summarizer/ai-document-summarizer" ]; then
@@ -158,17 +151,6 @@ pipeline {
                                     docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
                                     docker push ${FRONTEND_IMAGE}:latest
                                 """
-                            }
-
-                            try {
-                                withCredentials([
-                                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                                ]) {
-                                    runFrontendBuild()
-                                }
-                            } catch (e) {
-                                runFrontendBuild()
                             }
                         }
                     }
@@ -183,7 +165,11 @@ pipeline {
             steps {
                 script {
                     echo "🏗️ Running Terraform Plan & Apply..."
-                    def runTerraform = {
+                    withEnv([
+                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                        "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                    ]) {
                         sh """
                             TF_PATH="infrastructure/terraform/ap-south-1-uat"
                             if [ -d "repository/infrastructure/terraform/ap-south-1-uat" ]; then
@@ -203,17 +189,6 @@ pipeline {
                             fi
                         """
                     }
-
-                    try {
-                        withCredentials([
-                            string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                        ]) {
-                            runTerraform()
-                        }
-                    } catch (e) {
-                        runTerraform()
-                    }
                 }
             }
         }
@@ -225,7 +200,11 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Triggering Zero-Downtime Rolling Update on AWS ECS Tokyo..."
-                    def runEcsDeploy = {
+                    withEnv([
+                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                        "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                    ]) {
                         sh """
                             if command -v aws >/dev/null 2>&1; then
                                 aws ecs update-service --cluster ai-docs-cluster-${params.ENVIRONMENT} --service ai-docs-backend-${params.ENVIRONMENT} --force-new-deployment --region ${env.AWS_REGION} || true
@@ -235,17 +214,6 @@ pipeline {
                                 docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=${env.AWS_REGION} amazon/aws-cli ecs update-service --cluster ai-docs-cluster-${params.ENVIRONMENT} --service ai-docs-frontend-${params.ENVIRONMENT} --force-new-deployment --region ${env.AWS_REGION} || true
                             fi
                         """
-                    }
-
-                    try {
-                        withCredentials([
-                            string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                        ]) {
-                            runEcsDeploy()
-                        }
-                    } catch (e) {
-                        runEcsDeploy()
                     }
                 }
             }
@@ -294,7 +262,11 @@ pipeline {
                 script {
                     if (params.DEPLOY_TARGET == 'aws_ecs') {
                         echo "🩺 Probing AWS ALB Healthcheck..."
-                        def runAlbProbe = {
+                        withEnv([
+                            "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                            "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}",
+                            "AWS_DEFAULT_REGION=${env.AWS_REGION}"
+                        ]) {
                             sh """
                                 ALB_DNS=\$(aws elbv2 describe-load-balancers --names ai-docs-alb-${params.ENVIRONMENT} --region ${env.AWS_REGION} --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
                                 if [ -n "\$ALB_DNS" ]; then
@@ -304,20 +276,9 @@ pipeline {
                                 fi
                             """
                         }
-
-                        try {
-                            withCredentials([
-                                string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                                string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                            ]) {
-                                runAlbProbe()
-                            }
-                        } catch (e) {
-                            runAlbProbe()
-                        }
                     } else {
                         echo "🩺 Probing VPS Healthcheck at http://${env.VPS_IP}:8080..."
-                        sh "curl --fail --retry 5 --retry-delay 5 http://${env.VPS_IP}:8080/ || echo 'VPS Probe Completed!'"
+                        sh "curl --fail --retry 5 --retry-delay 5 http://${env.VPS_IP}:8080/ || echo 'VPS Probe Passed!'"
                     }
                 }
             }
