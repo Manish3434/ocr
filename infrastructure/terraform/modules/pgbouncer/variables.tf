@@ -1,21 +1,26 @@
 variable "environment" {
-  type = string
+  type    = string
+  default = "uat"
 }
 
 variable "vpc_id" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "private_subnet_ids" {
-  type = list(string)
+  type    = list(string)
+  default = []
 }
 
 variable "security_group_id" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "db_host" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "db_port" {
