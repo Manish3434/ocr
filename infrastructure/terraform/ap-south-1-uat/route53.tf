@@ -1,13 +1,15 @@
 # Search for Route53 Primary Hosted Zone (Optional)
-data "aws_route53_zones" "primary_search" {
+# aws_route53_zone (singular) supports name + private_zone filters
+data "aws_route53_zone" "primary_search" {
+  count        = 1
   name         = var.domain_name
   private_zone = false
 }
 
 # Route53 Alias Record pointing to ALB (Only if Hosted Zone exists)
 resource "aws_route53_record" "app" {
-  count   = length(data.aws_route53_zones.primary_search.ids) > 0 ? 1 : 0
-  zone_id = data.aws_route53_zones.primary_search.ids[0]
+  count   = length(data.aws_route53_zone.primary_search) > 0 ? 1 : 0
+  zone_id = data.aws_route53_zone.primary_search[0].zone_id
   name    = var.domain_name
   type    = "A"
 
@@ -20,8 +22,8 @@ resource "aws_route53_record" "app" {
 
 # Route53 Wildcard Alias Record for Subdomains (Only if Hosted Zone exists)
 resource "aws_route53_record" "wildcard" {
-  count   = length(data.aws_route53_zones.primary_search.ids) > 0 ? 1 : 0
-  zone_id = data.aws_route53_zones.primary_search.ids[0]
+  count   = length(data.aws_route53_zone.primary_search) > 0 ? 1 : 0
+  zone_id = data.aws_route53_zone.primary_search[0].zone_id
   name    = "*.${var.domain_name}"
   type    = "A"
 
