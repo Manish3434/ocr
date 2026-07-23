@@ -66,18 +66,23 @@ router.post('/signup', async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
     if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
 
-    const existing = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: cleanEmail });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name: name || email, email, password: hashed });
+    const user = await User.create({ name: name || cleanEmail, email: cleanEmail, password: hashed });
     req.login(user, (err) => {
-      if (err) return res.status(500).json({ message: 'Login after register failed' });
+      if (err) {
+        console.error('Session notice during signup:', err);
+        const { password: _, googleId, ...safe } = user.toObject();
+        return res.status(201).json({ message: 'Registered successfully', user: safe });
+      }
       const { password: _, googleId, ...safe } = user.toObject();
       res.status(201).json({ message: 'Registered successfully', user: safe });
     });
   } catch (err) {
-    console.error(err);
+    console.error('Signup Error:', err);
     res.status(500).json({ message: 'Registration failed' });
   }
 });

@@ -140,9 +140,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || "a-very-long-random-string",
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    store: MongoStore.create({
+      clientPromise: mongoose.connection.asPromise().then(m => m.connection.getClient())
+    }),
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days — prevents daily logouts
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       secure: isSecureCookie,
       httpOnly: true,
       sameSite: isSecureCookie ? "none" : "lax"
