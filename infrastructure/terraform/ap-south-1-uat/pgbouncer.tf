@@ -1,6 +1,6 @@
 # ── PgBouncer Security Group (Kept to ensure zero-deletion stability) ─────────
 resource "aws_security_group" "pgbouncer" {
-  name        = "ai-docs-pgbouncer-sg-${var.environment}"
+  name        = "ai-docs-pgbouncer-sg-v2-${var.environment}"
   description = "Security group for PgBouncer connection pooler"
   vpc_id      = aws_vpc.main.id
 

@@ -189,11 +189,6 @@ pipeline {
                         fi
 
                         \$TF_CMD init
-                        SG_ID=\$(aws ec2 describe-security-groups --region "\$REGION" --filters "Name=group-name,Values=ai-docs-pgbouncer-sg-\$ENV_NAME" --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null || echo "")
-                        if [ -n "\$SG_ID" ] && [ "\$SG_ID" != "None" ]; then
-                            echo "Importing existing Security Group \$SG_ID into Terraform state..."
-                            \$TF_CMD import aws_security_group.pgbouncer "\$SG_ID" || true
-                        fi
                         \$TF_CMD validate
                         rm -f tfplan
                         \$TF_CMD plan -var="aws_region=\$REGION" -var-file="\$ENV_NAME.tfvars" -out=tfplan
