@@ -96,7 +96,7 @@ resource "aws_ecs_task_definition" "backend" {
         # ── Database & Cache ──────────────────────────────────────────────
         { name = "MONGO_URI",  value = "mongodb://aidocsuser:${random_password.docdb_master.result}@${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer" },
         { name = "MONGO_TLS",  value = "false" },
-        { name = "REDIS_URI",  value = "rediss://:${random_password.redis_auth.result}@${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" },
+        { name = "REDIS_URI",  value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" },
 
         # ── AI API Keys ───────────────────────────────────────────────────
         { name = "GROQ_API_KEY",      value = var.groq_api_key },
