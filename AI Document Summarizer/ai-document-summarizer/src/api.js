@@ -2,8 +2,11 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { createElement as h } from "react";
 
+const rawUrl = import.meta.env.VITE_API_URL;
+const baseURL = (!rawUrl || rawUrl === '/') ? '' : rawUrl.replace(/\/+$/, '');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL,
   withCredentials: true,
 });
 

@@ -66,7 +66,8 @@ function Auth({ setIsAuthenticated, setUser }) {
   };
 
   const handleGoogleLogin = () => {
-    const base = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const raw = import.meta.env.VITE_API_URL;
+    const base = (!raw || raw === '/') ? '' : raw.replace(/\/+$/, '');
     window.location.href = `${base}/auth/google`;
   };
 

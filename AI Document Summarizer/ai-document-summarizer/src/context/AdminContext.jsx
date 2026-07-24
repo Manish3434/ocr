@@ -18,7 +18,8 @@ const DEFAULT_FLAGS = {
 };
 
 // ─── Backend base URL (same source as the api axios instance) ─────────────────
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE  = (!rawApiUrl || rawApiUrl === '/') ? '' : rawApiUrl.replace(/\/+$/, '');
 
 // ─── localStorage helpers (fast local cache) ─────────────────────────────────
 const LS = {

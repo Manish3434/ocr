@@ -10,7 +10,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { FileText, ExternalLink } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE  = (!rawApiUrl || rawApiUrl === '/') ? '' : rawApiUrl.replace(/\/+$/, '');
 
 export default function SharedSummaryPage() {
   const { token } = useParams();

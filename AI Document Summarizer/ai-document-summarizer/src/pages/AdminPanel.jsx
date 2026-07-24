@@ -1189,7 +1189,8 @@ function ApiUsageTab() {
   const [error, setError] = useState(null);
   const sseRef = useRef(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const rawApiUrl = import.meta.env.VITE_API_URL;
+  const API_BASE  = (!rawApiUrl || rawApiUrl === '/') ? '' : rawApiUrl.replace(/\/+$/, '');
 
   const loadHistory = useCallback(async () => {
     try {

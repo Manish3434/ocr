@@ -14,7 +14,8 @@ import UsageBadge from "../components/UsageBadge";
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // ── SSE progress hook (same as in Uploadcard) ─────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE  = (!rawApiUrl || rawApiUrl === '/') ? '' : rawApiUrl.replace(/\/+$/, '');
 
 function useProgress() {
   const [progress, setProgress] = useState({ stage: "idle", percent: 0, message: "", done: false, error: false });

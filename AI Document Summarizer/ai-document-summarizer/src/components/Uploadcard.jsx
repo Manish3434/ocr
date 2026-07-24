@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 
 // ── SSE progress hook (inline — no extra file needed) ────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE  = (!rawApiUrl || rawApiUrl === '/') ? '' : rawApiUrl.replace(/\/+$/, '');
 
 function useProgress() {
   const [progress, setProgress] = useState({ stage: "idle", percent: 0, message: "", done: false, error: false });
