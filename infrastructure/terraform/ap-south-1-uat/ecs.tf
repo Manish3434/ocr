@@ -94,8 +94,9 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "ALLOWED_ORIGINS", value = "http://${aws_lb.main.dns_name}" },
 
         # ── Database & Cache ──────────────────────────────────────────────
-        { name = "MONGO_URI",  value = "mongodb://aidocsuser:${random_password.docdb_master.result}@${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false&connectTimeoutMS=10000" },
-        { name = "MONGO_TLS",  value = "false" },
+        { name = "MONGO_URI",                     value = "mongodb://aidocsuser:${random_password.docdb_master.result}@${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false&connectTimeoutMS=10000" },
+        { name = "MONGO_TLS",                     value = "true" },
+        { name = "MONGO_TLS_ALLOW_INVALID_CERTS", value = "true" },
         { name = "REDIS_URI",  value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" },
 
         # ── AI API Keys ───────────────────────────────────────────────────
