@@ -32,9 +32,11 @@ resource "aws_docdb_cluster" "docdb" {
   vpc_security_group_ids          = [aws_security_group.db.id]
   db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.no_tls.name
 
-  storage_encrypted   = true
-  deletion_protection = false
-  skip_final_snapshot = true
+  storage_encrypted       = true
+  backup_retention_period = 7
+  preferred_backup_window = "02:00-03:00"
+  deletion_protection     = false
+  skip_final_snapshot     = true
 
   tags = {
     Name = "ai-docs-docdb-${var.environment}"

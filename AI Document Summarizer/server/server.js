@@ -112,24 +112,45 @@ const connectDB = async () => {
     console.error('❌ DocumentDB directConnection mode failed:', err2.message);
   }
 
-  // Attempt 3: Atlas Cloud MongoDB Fallback
-  const fallbackUri = process.env.MONGO_URI_FALLBACK;
-  if (fallbackUri) {
+  // Attempt 3 (Backup #1): Atlas Cloud MongoDB Primary Fallback
+  const fallbackUri1 = process.env.MONGO_URI_FALLBACK;
+  if (fallbackUri1) {
     try {
-      console.log('🔄 Attempting Atlas Cloud MongoDB fallback connection...');
-      await mongoose.connect(fallbackUri, {
-        serverSelectionTimeoutMS: 5000,
-        connectTimeoutMS: 5000,
+      console.log('🔄 Attempting Atlas Cloud MongoDB Backup #1 connection...');
+      await mongoose.connect(fallbackUri1, {
+        serverSelectionTimeoutMS: 4000,
+        connectTimeoutMS: 4000,
         socketTimeoutMS: 45000,
         family: 4,
         tls: true,
         tlsAllowInvalidCertificates: true,
       });
-      console.log('✅ MongoDB connected successfully (Atlas Cloud fallback mode)');
+      console.log('✅ MongoDB connected successfully (Atlas Cloud Backup #1 mode)');
       await seedDefaultUser();
       return;
     } catch (err3) {
-      console.error('❌ Atlas Cloud MongoDB fallback failed:', err3.message);
+      console.error('❌ Atlas Cloud MongoDB Backup #1 failed:', err3.message);
+    }
+  }
+
+  // Attempt 4 (Backup #2): Secondary Disaster Recovery Database Fallback
+  const fallbackUri2 = process.env.MONGO_URI_FALLBACK_2 || process.env.MONGO_URI_FALLBACK;
+  if (fallbackUri2) {
+    try {
+      console.log('🔄 Attempting Disaster Recovery Database Backup #2 connection...');
+      await mongoose.connect(fallbackUri2, {
+        serverSelectionTimeoutMS: 4000,
+        connectTimeoutMS: 4000,
+        socketTimeoutMS: 45000,
+        family: 4,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+      });
+      console.log('✅ MongoDB connected successfully (Disaster Recovery Backup #2 mode)');
+      await seedDefaultUser();
+      return;
+    } catch (err4) {
+      console.error('❌ Disaster Recovery Database Backup #2 failed:', err4.message);
     }
   }
 
