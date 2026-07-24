@@ -201,6 +201,23 @@ app.get("/auth/google/callback", (req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT} (${NODE_ENV} mode)`);
+
+    // ── Keep-alive ping (prevents Render free tier from sleeping) ──────────
+    const SERVER_URL = process.env.SERVER_URL || process.env.BACKEND_URL;
+    if (SERVER_URL && NODE_ENV === 'production') {
+        const https = require('https');
+        const http  = require('http');
+        setInterval(() => {
+            const url = `${SERVER_URL}/api/health`;
+            const client = url.startsWith('https') ? https : http;
+            client.get(url, (res) => {
+                console.log(`[keepalive] ping → ${url} (${res.statusCode})`);
+            }).on('error', (err) => {
+                console.warn('[keepalive] ping failed:', err.message);
+            });
+        }, 14 * 60 * 1000); // every 14 minutes
+        console.log(`[keepalive] Self-ping enabled → ${SERVER_URL}/api/health every 14 min`);
+    }
 });
 
 app.use((err, req, res, next) => {
