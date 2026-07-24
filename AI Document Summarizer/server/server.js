@@ -71,7 +71,8 @@ mongoose.set('bufferCommands', false);
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI || "";
   const isDocDB  = mongoUri.includes("docdb.amazonaws.com");
-  const useTls   = process.env.MONGO_TLS === "true";
+  // AWS DocumentDB defaults to TLS enabled unless explicitly set to false
+  const useTls   = isDocDB ? process.env.MONGO_TLS !== "false" : process.env.MONGO_TLS === "true";
 
   const primaryOpts = {
     serverSelectionTimeoutMS: 5000,
@@ -117,6 +118,18 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+// ── Guard Middleware: Return 503 if DB is connecting instead of crashing ──
+app.use((req, res, next) => {
+  if (req.path === '/api/health' || req.path === '/health') return next();
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection is being established. Please retry in a few seconds.'
+    });
+  }
+  next();
+});
 
 app.set('trust proxy', 1);
 
