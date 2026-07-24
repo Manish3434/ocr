@@ -68,15 +68,17 @@ const seedDefaultUser = async () => {
 const connectDB = async () => {
   try {
     const useTls = process.env.MONGO_TLS === "true";
-    await mongoose.connect(process.env.MONGO_URI, {
+    const connectOptions = {
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       socketTimeoutMS: 45000,
       family: 4,
       tls: useTls,
-      tlsAllowInvalidCertificates: useTls && process.env.MONGO_TLS_ALLOW_INVALID_CERTS === "true",
-      w: 'majority'
-    });
+    };
+    if (useTls && process.env.MONGO_TLS_ALLOW_INVALID_CERTS === "true") {
+      connectOptions.tlsAllowInvalidCertificates = true;
+    }
+    await mongoose.connect(process.env.MONGO_URI, connectOptions);
     console.log('✅ MongoDB connected successfully');
     await seedDefaultUser();
   } catch (err) {
