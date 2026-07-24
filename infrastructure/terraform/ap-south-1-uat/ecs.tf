@@ -98,6 +98,7 @@ resource "aws_ecs_task_definition" "backend" {
         # ── Database & Cache ──────────────────────────────────────────────
         { name = "MONGO_URI",                     value = "mongodb://aidocsuser:${random_password.docdb_master.result}@${aws_docdb_cluster.docdb.endpoint}:27017/ai-docs-summarizer?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false&connectTimeoutMS=10000" },
         { name = "MONGO_URI_FALLBACK",            value = "mongodb://waranlogesh2005_db_user:logeshwaran117@ac-dffxwcg-shard-00-00.lxcz99h.mongodb.net:27017,ac-dffxwcg-shard-00-01.lxcz99h.mongodb.net:27017,ac-dffxwcg-shard-00-02.lxcz99h.mongodb.net:27017/ai-document-summarizer?ssl=true&replicaSet=atlas-w3sq58-shard-0&authSource=admin&retryWrites=true&w=majority" },
+        { name = "MONGO_URI_FALLBACK_2",          value = "mongodb://waranlogesh2005_db_user:logeshwaran117@ac-dffxwcg-shard-00-00.lxcz99h.mongodb.net:27017,ac-dffxwcg-shard-00-01.lxcz99h.mongodb.net:27017,ac-dffxwcg-shard-00-02.lxcz99h.mongodb.net:27017/ai-document-summarizer-dr?ssl=true&replicaSet=atlas-w3sq58-shard-0&authSource=admin&retryWrites=true&w=majority" },
         { name = "MONGO_TLS",                     value = "true" },
         { name = "MONGO_TLS_ALLOW_INVALID_CERTS", value = "true" },
         { name = "REDIS_URI",  value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379" },
