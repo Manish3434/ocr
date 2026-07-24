@@ -4,11 +4,11 @@ resource "random_password" "docdb_master" {
   special = false
 }
 
-# DocumentDB Cluster Parameter Group - TLS Enabled for Secure Encrypted Connections
-resource "aws_docdb_cluster_parameter_group" "tls_enabled" {
+# DocumentDB Cluster Parameter Group
+resource "aws_docdb_cluster_parameter_group" "no_tls" {
   family      = "docdb5.0"
-  name        = "ai-docs-docdb-tls-enabled-${var.environment}"
-  description = "DocumentDB parameter group with TLS enabled for secure connections"
+  name        = "ai-docs-docdb-no-tls-${var.environment}"
+  description = "DocumentDB parameter group"
 
   parameter {
     name  = "tls"
@@ -29,7 +29,7 @@ resource "aws_docdb_cluster" "docdb" {
   master_password                 = random_password.docdb_master.result
   db_subnet_group_name            = aws_db_subnet_group.db_subnet_group.name
   vpc_security_group_ids          = [aws_security_group.db.id]
-  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.tls_enabled.name
+  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.no_tls.name
 
   storage_encrypted       = true
   backup_retention_period = 7

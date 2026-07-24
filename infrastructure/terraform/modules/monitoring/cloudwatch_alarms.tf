@@ -27,6 +27,10 @@ variable "alert_email" {
   default = "waranlogesh2005@gmail.com"
 }
 
+locals {
+  valid_alert_email = var.alert_email != "" && var.alert_email != null ? var.alert_email : "waranlogesh2005@gmail.com"
+}
+
 # SNS Topic for Alarms
 resource "aws_sns_topic" "alerts" {
   name = "ai-docs-alerts-${var.environment}"
@@ -36,7 +40,7 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sns_topic_subscription" "email_subscription" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = var.alert_email
+  endpoint  = local.valid_alert_email
 }
 
 # CloudWatch Alarm - High ECS CPU Utilization (Triggers automatically at 70%)
