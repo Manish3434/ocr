@@ -67,24 +67,22 @@ const seedDefaultUser = async () => {
 // Disable query buffering so endpoints fail fast or return 503 instead of hanging for 10,000ms
 mongoose.set('bufferCommands', false);
 
-// MongoDB Connection with Auto-Fallback for AWS DocumentDB
+// MongoDB Connection with Auto-Fallback for AWS DocumentDB & Atlas Cloud
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI || "";
   const isDocDB  = mongoUri.includes("docdb.amazonaws.com");
-  // AWS DocumentDB defaults to TLS enabled unless explicitly set to false
   const useTls   = isDocDB ? process.env.MONGO_TLS !== "false" : process.env.MONGO_TLS === "true";
 
   const primaryOpts = {
-    serverSelectionTimeoutMS: 5000,
-    connectTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 4000,
+    connectTimeoutMS: 4000,
     socketTimeoutMS: 45000,
     family: 4,
     tls: useTls,
+    tlsAllowInvalidCertificates: true,
   };
-  if (useTls) {
-    primaryOpts.tlsAllowInvalidCertificates = true;
-  }
 
+  // Attempt 1: Primary URI with configured options
   try {
     await mongoose.connect(mongoUri, primaryOpts);
     console.log('✅ MongoDB connected successfully');
@@ -94,27 +92,49 @@ const connectDB = async () => {
     console.error('❌ Primary MongoDB connection attempt failed:', err.message);
   }
 
-  // Fallback mode for AWS DocumentDB / replica-set topology discovery
+  // Attempt 2: DocumentDB Direct Connection mode
   try {
-    console.log('🔄 Attempting DocumentDB fallback connection mode...');
+    console.log('🔄 Attempting DocumentDB directConnection fallback mode...');
     const fallbackOpts = {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 4000,
+      connectTimeoutMS: 4000,
       socketTimeoutMS: 45000,
       family: 4,
-      tls: !useTls,
+      tls: true,
       tlsAllowInvalidCertificates: true,
-      directConnection: isDocDB
+      directConnection: true
     };
     await mongoose.connect(mongoUri, fallbackOpts);
-    console.log('✅ MongoDB connected successfully (fallback mode)');
+    console.log('✅ MongoDB connected successfully (DocumentDB directConnection mode)');
     await seedDefaultUser();
     return;
   } catch (err2) {
-    console.error('❌ Fallback MongoDB connection failed:', err2.message);
-    console.error('Retrying in 5 seconds...');
-    setTimeout(connectDB, 5000);
+    console.error('❌ DocumentDB directConnection mode failed:', err2.message);
   }
+
+  // Attempt 3: Atlas Cloud MongoDB Fallback
+  const fallbackUri = process.env.MONGO_URI_FALLBACK;
+  if (fallbackUri) {
+    try {
+      console.log('🔄 Attempting Atlas Cloud MongoDB fallback connection...');
+      await mongoose.connect(fallbackUri, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        family: 4,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+      });
+      console.log('✅ MongoDB connected successfully (Atlas Cloud fallback mode)');
+      await seedDefaultUser();
+      return;
+    } catch (err3) {
+      console.error('❌ Atlas Cloud MongoDB fallback failed:', err3.message);
+    }
+  }
+
+  console.error('Retrying MongoDB connection in 5 seconds...');
+  setTimeout(connectDB, 5000);
 };
 
 connectDB();
