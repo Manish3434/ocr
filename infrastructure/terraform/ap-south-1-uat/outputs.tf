@@ -23,6 +23,11 @@ output "high_performance_nlb_url" {
   value       = "http://${aws_lb.nlb.dns_name}"
 }
 
+output "voice_agent_url" {
+  description = "The SIP/TCP Voice Agent Endpoint via High-Performance NLB"
+  value       = "sip:${aws_lb.nlb.dns_name}:5060"
+}
+
 output "ecs_cluster_name" {
   description = "Name of the ECS Cluster"
   value       = aws_ecs_cluster.main.name

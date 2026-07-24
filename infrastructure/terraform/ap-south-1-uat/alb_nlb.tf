@@ -1,4 +1,4 @@
-# High Availability Application Load Balancer across 3 Public Subnets
+# ── Application Load Balancer (HTTP/HTTPS) ──────────────────────────────────────
 resource "aws_lb" "main" {
   name               = "ai-docs-alb-${var.environment}"
   internal           = false
@@ -13,7 +13,7 @@ resource "aws_lb" "main" {
   }
 }
 
-# Target Group for Frontend (React Nginx on Port 8080)
+# Target Group for Frontend (React Nginx on Port 8080) -> Frontend ECS Fargate
 resource "aws_lb_target_group" "frontend" {
   name                 = "ai-docs-tg-frontend-${var.environment}"
   port                 = 8080
@@ -39,7 +39,7 @@ resource "aws_lb_target_group" "frontend" {
   }
 }
 
-# Target Group for Backend (Node.js Express on Port 5000)
+# Target Group for Backend (Node.js Express on Port 5000) -> Backend ECS Fargate
 resource "aws_lb_target_group" "backend" {
   name                 = "ai-docs-tg-backend-${var.environment}"
   port                 = 5000
@@ -65,7 +65,7 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-# HTTP Listener (Port 80) -> Default Forward to Frontend Target Group
+# HTTP Listener (Port 80) -> Default Forward to Frontend ECS Fargate
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
@@ -77,7 +77,7 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# Listener Rule for HTTP Backend API (/api/* and /auth/*)
+# Listener Rule for HTTP Backend API (/api/* and /auth/*) -> Backend ECS Fargate
 resource "aws_lb_listener_rule" "backend_api_http" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 10
@@ -94,7 +94,7 @@ resource "aws_lb_listener_rule" "backend_api_http" {
   }
 }
 
-# ── High-Performance Network Load Balancer (NLB) for Ultra-Low Latency ──────────
+# ── Network Load Balancer (SIP/TCP/UDP) ─────────────────────────────────────────
 resource "aws_lb" "nlb" {
   name               = "ai-docs-nlb-${var.environment}"
   internal           = false
@@ -109,19 +109,19 @@ resource "aws_lb" "nlb" {
   }
 }
 
-# NLB Target Group targeting ALB (Target Type = alb)
-resource "aws_lb_target_group" "nlb_to_alb" {
-  name        = "ai-docs-tg-nlb-alb-${var.environment}"
-  port        = 80
-  protocol    = "TCP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "alb"
+# Target Group for Voice Agent (SIP/TCP on Port 5060) -> Voice Agent ECS Fargate
+resource "aws_lb_target_group" "voice_agent" {
+  name                 = "ai-docs-tg-voice-${var.environment}"
+  port                 = 5060
+  protocol             = "TCP"
+  vpc_id               = aws_vpc.main.id
+  target_type          = "ip"
+  deregistration_delay = 15
 
   health_check {
     enabled             = true
-    path                = "/api/health"
-    port                = "80"
-    protocol            = "HTTP"
+    port                = "5060"
+    protocol            = "TCP"
     interval            = 15
     timeout             = 5
     healthy_threshold   = 2
@@ -129,25 +129,18 @@ resource "aws_lb_target_group" "nlb_to_alb" {
   }
 
   tags = {
-    Name = "ai-docs-tg-nlb-alb-${var.environment}"
+    Name = "ai-docs-tg-voice-${var.environment}"
   }
 }
 
-# Attach ALB as target inside NLB Target Group
-resource "aws_lb_target_group_attachment" "nlb_alb_attachment" {
-  target_group_arn = aws_lb_target_group.nlb_to_alb.arn
-  target_id        = aws_lb.main.arn
-  port             = 80
-}
-
-# NLB Listener (TCP Port 80) -> Forwards to ALB
-resource "aws_lb_listener" "nlb_tcp_80" {
+# NLB Listener (SIP/TCP Port 5060) -> Forwards directly to Voice Agent ECS Fargate
+resource "aws_lb_listener" "nlb_voice_tcp" {
   load_balancer_arn = aws_lb.nlb.arn
-  port              = "80"
+  port              = "5060"
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.nlb_to_alb.arn
+    target_group_arn = aws_lb_target_group.voice_agent.arn
   }
 }
