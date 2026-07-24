@@ -195,22 +195,34 @@ app.get("/api/health", (req, res) => {
 
 const isSecureCookie = process.env.COOKIE_SECURE === "true";
 
-const sessionMongoUri = process.env.MONGO_URI_FALLBACK || process.env.MONGO_URI || "mongodb://localhost:27017/ai-document-summarizer";
+// ── Permanent Fail-Safe Session Store ──────────────────────────────────────────
+let sessionStore;
+try {
+  const sessionMongoUri = process.env.MONGO_URI_FALLBACK || process.env.MONGO_URI || "mongodb://localhost:27017/ai-document-summarizer";
+  sessionStore = MongoStore.create({
+    mongoUrl: sessionMongoUri,
+    mongoOptions: {
+      family: 4,
+      tls: true,
+      tlsAllowInvalidCertificates: true,
+      serverSelectionTimeoutMS: 3000,
+      connectTimeoutMS: 3000,
+    },
+    ttl: 7 * 24 * 60 * 60, // 7 days
+  });
+  sessionStore.on('error', (err) => {
+    console.warn('⚠️ Non-fatal session store event:', err.message);
+  });
+} catch (err) {
+  console.warn('⚠️ Session store fallback to MemoryStore:', err.message);
+  sessionStore = new session.MemoryStore();
+}
 
 app.use(session({
     secret: process.env.SESSION_SECRET || "a-very-long-random-string",
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: sessionMongoUri,
-      mongoOptions: {
-        family: 4,
-        tls: true,
-        tlsAllowInvalidCertificates: true,
-        serverSelectionTimeoutMS: 5000,
-      },
-      ttl: 7 * 24 * 60 * 60, // 7 days
-    }),
+    store: sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       secure: isSecureCookie,
