@@ -37,3 +37,8 @@ output "redis_primary_endpoint" {
   description = "The primary endpoint of ElastiCache Redis"
   value       = aws_elasticache_replication_group.redis.primary_endpoint_address
 }
+
+output "redis_reader_endpoint" {
+  description = "The read replica endpoint of ElastiCache Redis for read-heavy scaling"
+  value       = aws_elasticache_replication_group.redis.reader_endpoint_address
+}

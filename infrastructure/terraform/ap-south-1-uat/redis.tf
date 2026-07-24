@@ -1,9 +1,9 @@
-# ElastiCache Redis Replication Group (Multi-AZ Automatic Failover)
+# ElastiCache Redis Replication Group (Multi-AZ 3-Node Cluster with 2 Read Replicas)
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id        = "ai-docs-redis-${var.environment}"
-  description                 = "High Availability Redis cluster with automatic failover"
+  description                 = "High Availability Redis cluster with 2 read replicas and automatic failover"
   node_type                   = var.redis_node_type
-  num_cache_clusters          = 2
+  num_cache_clusters          = 3 # 1 Primary + 2 Multi-AZ Read Replicas
   port                        = 6379
   parameter_group_name        = "default.redis7"
   subnet_group_name           = aws_elasticache_subnet_group.redis_subnet_group.name

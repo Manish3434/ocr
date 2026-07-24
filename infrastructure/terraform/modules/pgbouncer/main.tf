@@ -13,7 +13,7 @@ resource "aws_security_group" "pgbouncer" {
   }
 
   egress {
-    description = "Allow egress to DB"
+    description = "Allow egress to DB and VPC"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -23,4 +23,11 @@ resource "aws_security_group" "pgbouncer" {
   tags = {
     Name = "ai-docs-pgbouncer-sg-${var.environment}"
   }
+}
+
+# Local Parameters for Connection Pooler Configuration
+locals {
+  pool_mode        = "transaction"
+  max_client_conn  = var.max_client_conn
+  default_pool_size = var.default_pool_size
 }
