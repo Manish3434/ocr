@@ -292,7 +292,7 @@ ${chunk}
 Return JSON array only:`;
 
     try {
-      const raw = await callWithRotation(() => [{ text: prompt }], 16384,"gemini-2.5-flash", onUsage);
+      const raw = await callWithRotation(() => [{ text: prompt }], 16384,"gemini-3.5-flash", onUsage);
       const parsed = parseTransactionJson(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         console.log(`[banking] AI chunk ${ci + 1}/${chunks.length}: ${parsed.length} transactions`);
@@ -429,7 +429,7 @@ Write your summary using Markdown with these sections:
 
 Be specific with numbers. Be concise but thorough.`;
 
-  return callWithRotation(() => [{ text: prompt }], 3000, "gemini-2.5-flash", onUsage);
+  return callWithRotation(() => [{ text: prompt }], 3000, "gemini-3.5-flash", onUsage);
 }
 
 // ── Q&A ───────────────────────────────────────────────────────────────────────
@@ -460,7 +460,7 @@ ${txSample || 'No structured transactions extracted — use raw document text ab
 Question: ${question}
 Answer:`;
 
-  return callWithRotation(() => [{ text: prompt }], 1500, "gemini-2.5-flash", onUsage);
+  return callWithRotation(() => [{ text: prompt }], 1500, "gemini-3.5-flash", onUsage);
 }
 
 // (exports consolidated below with extractTransactionsFromPdfVision)

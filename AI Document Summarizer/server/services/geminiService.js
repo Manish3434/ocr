@@ -1,7 +1,7 @@
 /**
  * geminiService.js  (with usage tracking integrated)
  *
- * MODEL: gemini-3.5-flash (free tier, GA May 2026)
+ * MODEL: gemini-3.5-flash (free tier, GA July 21 2026)
  *   ✗ gemini-2.5-flash — PAID-ONLY since April 1 2026 (was causing 429s)
  *   ✗ gemini-2.0-flash — SHUT DOWN June 1 2026
  *   ✗ gemini-1.5-*    — SHUT DOWN

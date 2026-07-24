@@ -167,6 +167,18 @@ pipeline {
                         fi
                         export AWS_DEFAULT_REGION="ap-northeast-1"
 
+                        # ── Inject secrets as TF_VAR_* (never committed to git) ──
+                        export TF_VAR_google_client_id="${env.GOOGLE_CLIENT_ID ?: ''}"
+                        export TF_VAR_google_client_secret="${env.GOOGLE_CLIENT_SECRET ?: ''}"
+                        export TF_VAR_groq_api_key="${env.GROQ_API_KEY ?: ''}"
+                        export TF_VAR_gemini_key_1="${env.GEMINI_KEY_1 ?: ''}"
+                        export TF_VAR_anthropic_api_key="${env.ANTHROPIC_API_KEY ?: ''}"
+                        export TF_VAR_email_user="${env.EMAIL_USER ?: ''}"
+                        export TF_VAR_email_pass="${env.EMAIL_PASS ?: ''}"
+                        export TF_VAR_cashfree_app_id="${env.CASHFREE_APP_ID ?: ''}"
+                        export TF_VAR_cashfree_secret_key="${env.CASHFREE_SECRET_KEY ?: ''}"
+                        export TF_VAR_cashfree_webhook_secret="${env.CASHFREE_WEBHOOK_SECRET ?: ''}"
+
                         TF_PATH="infrastructure/terraform/ap-south-1-uat"
                         if [ -d "repository/infrastructure/terraform/ap-south-1-uat" ]; then
                             TF_PATH="repository/infrastructure/terraform/ap-south-1-uat"
@@ -177,7 +189,7 @@ pipeline {
                         ENV_NAME="uat"
 
                         TF_CMD="terraform"
-                        if ! command -v terraform >/dev/null 2>&1; then
+                        if ! command -v terraform > /dev/null 2>&1; then
                             if [ ! -f "./terraform" ]; then
                                 echo "Downloading local Terraform CLI binary..."
                                 curl -sSL -o ./terraform.zip https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip

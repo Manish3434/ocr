@@ -24,26 +24,32 @@ db_instance_class = "db.t3.medium"
 redis_node_type   = "cache.t3.micro"
 
 # ── Application Secrets ────────────────────────────────────────────────────
-# Session secret - required for app to start (min 32 chars)
+# ⚠️  DO NOT commit real secrets here.
+# All secrets below are injected at pipeline runtime via:
+#   Jenkins Credentials → TF_VAR_* environment variables
+# See Jenkinsfile for injection logic.
+
 session_secret = "ai-docs-uat-secret-key-2026-secure-prod-key"
 
-# ── Google OAuth (get from https://console.cloud.google.com/apis/credentials)
-# FILL THESE IN to enable Google Login feature
+# ── Google OAuth ───────────────────────────────────────────────────────────
+# Injected via Jenkins credentials: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
 google_client_id     = ""
 google_client_secret = ""
 
-# ── AI API Keys (fill in to enable AI summarization features)
-groq_api_key      = ""   # https://console.groq.com/keys
-gemini_key_1      = ""   # https://aistudio.google.com/app/apikey
-openai_api_key    = ""   # https://platform.openai.com/api-keys
-anthropic_api_key = ""   # https://console.anthropic.com
+# ── AI API Keys ────────────────────────────────────────────────────────────
+# Injected via Jenkins credentials: GROQ_API_KEY / GEMINI_KEY_1 / etc.
+groq_api_key      = ""
+gemini_key_1      = ""
+openai_api_key    = ""
+anthropic_api_key = ""
 
-# ── Email SMTP (fill in to enable email notifications)
-email_user = "maneeskumar3434@gmail.com"
-email_pass = ""   # ⚠️  REQUIRED: Generate Gmail App Password at https://myaccount.google.com/apppasswords
-           # (NOT your Gmail login password - a 16-char app-specific password)
+# ── Email SMTP ─────────────────────────────────────────────────────────────
+# Injected via Jenkins credentials: EMAIL_USER / EMAIL_PASS
+email_user = ""
+email_pass = ""
 
-# ── Cashfree Payment (fill in to enable payments)
-cashfree_app_id        = ""
-cashfree_secret_key    = ""
+# ── Cashfree Payment ───────────────────────────────────────────────────────
+# Injected via Jenkins credentials: CASHFREE_APP_ID / CASHFREE_SECRET_KEY
+cashfree_app_id         = ""
+cashfree_secret_key     = ""
 cashfree_webhook_secret = ""

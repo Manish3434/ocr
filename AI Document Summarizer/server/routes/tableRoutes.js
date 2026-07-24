@@ -159,7 +159,7 @@ Question: ${question.trim()}
 
 Answer:`;
 
-    const answer = await callWithRotation(() => [{ text: prompt }], 2048, "gemini-2.5-flash");
+    const answer = await callWithRotation(() => [{ text: prompt }], 2048, "gemini-3.5-flash");
 
     table.chatHistory.push({ role: "user", text: question.trim() });
     table.chatHistory.push({ role: "assistant", text: answer });
