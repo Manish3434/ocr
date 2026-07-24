@@ -28,8 +28,9 @@ variable "alert_email" {
 }
 
 locals {
-  raw_email         = var.alert_email != "" && var.alert_email != null ? var.alert_email : "waranlogesh2005@gmail.com"
-  valid_alert_email = trimspace(replace(local.raw_email, "\"", ""))
+  clean_email       = trimspace(replace(replace(coalesce(var.alert_email, "waranlogesh2005@gmail.com"), "\"", ""), "'", ""))
+  is_valid_email    = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", local.clean_email))
+  valid_alert_email = local.is_valid_email ? local.clean_email : "waranlogesh2005@gmail.com"
 }
 
 # SNS Topic for Alarms
