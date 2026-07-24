@@ -4,15 +4,19 @@ resource "random_password" "docdb_master" {
   special = false
 }
 
-# DocumentDB Cluster Parameter Group
+# DocumentDB Cluster Parameter Group (with create_before_destroy lifecycle protection)
 resource "aws_docdb_cluster_parameter_group" "no_tls" {
   family      = "docdb5.0"
-  name        = "ai-docs-docdb-no-tls-${var.environment}"
-  description = "DocumentDB parameter group"
+  name        = "ai-docs-docdb-params-v3-${var.environment}"
+  description = "DocumentDB parameter group with TLS enabled"
 
   parameter {
     name  = "tls"
     value = "enabled"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = {
