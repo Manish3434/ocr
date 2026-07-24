@@ -22,12 +22,24 @@ variable "alb_arn_suffix" {
   type = string
 }
 
+variable "alert_email" {
+  type    = string
+  default = "waranlogesh2005@gmail.com"
+}
+
 # SNS Topic for Alarms
 resource "aws_sns_topic" "alerts" {
   name = "ai-docs-alerts-${var.environment}"
 }
 
-# CloudWatch Alarm - High ECS CPU Utilization
+# SNS Email Subscription for Automatic Alert Notifications
+resource "aws_sns_topic_subscription" "email_subscription" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+# CloudWatch Alarm - High ECS CPU Utilization (Triggers automatically at 70%)
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_name          = "ai-docs-ecs-cpu-high-${var.environment}"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -36,8 +48,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   namespace           = "AWS/ECS"
   period              = 60
   statistic           = "Average"
-  threshold           = 85
-  alarm_description   = "Alarm when ECS CPU utilization exceeds 85%"
+  threshold           = 70
+  alarm_description   = "Alarm automatically triggered when ECS CPU utilization exceeds 70%"
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
@@ -47,7 +59,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_actions = [aws_sns_topic.alerts.arn]
 }
 
-# CloudWatch Alarm - High ECS Memory Utilization
+# CloudWatch Alarm - High ECS Memory Utilization (Triggers automatically at 70%)
 resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   alarm_name          = "ai-docs-ecs-memory-high-${var.environment}"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -56,12 +68,31 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   namespace           = "AWS/ECS"
   period              = 60
   statistic           = "Average"
-  threshold           = 90
-  alarm_description   = "Alarm when ECS Memory utilization exceeds 90%"
+  threshold           = 70
+  alarm_description   = "Alarm automatically triggered when ECS Memory utilization exceeds 70%"
 
   dimensions = {
     ClusterName = var.ecs_cluster_name
     ServiceName = var.backend_service_name
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+}
+
+# CloudWatch Alarm - High DocumentDB CPU Utilization (Triggers automatically at 70%)
+resource "aws_cloudwatch_metric_alarm" "docdb_cpu_high" {
+  alarm_name          = "ai-docs-docdb-cpu-high-${var.environment}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/DocDB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 70
+  alarm_description   = "Alarm automatically triggered when DocumentDB CPU utilization exceeds 70%"
+
+  dimensions = {
+    DBClusterIdentifier = "ai-docs-docdb-${var.environment}"
   }
 
   alarm_actions = [aws_sns_topic.alerts.arn]
@@ -77,7 +108,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
   period              = 60
   statistic           = "Maximum"
   threshold           = 0
-  alarm_description   = "Alarm when ALB target group has unhealthy hosts"
+  alarm_description   = "Alarm automatically triggered when ALB target group has unhealthy hosts"
 
   dimensions = {
     TargetGroup  = var.alb_target_group_arn

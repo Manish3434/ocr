@@ -1,4 +1,4 @@
-# Module invocation for CloudWatch Monitoring Alarms
+# Module invocation for CloudWatch Monitoring Alarms (Auto 70% threshold alerts)
 module "monitoring" {
   source = "../modules/monitoring"
 
@@ -8,4 +8,5 @@ module "monitoring" {
   frontend_service_name = aws_ecs_service.frontend.name
   alb_target_group_arn  = aws_lb_target_group.backend.arn_suffix
   alb_arn_suffix        = aws_lb.main.arn_suffix
+  alert_email           = var.email_user
 }
