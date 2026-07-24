@@ -28,7 +28,8 @@ variable "alert_email" {
 }
 
 locals {
-  valid_alert_email = var.alert_email != "" && var.alert_email != null ? var.alert_email : "waranlogesh2005@gmail.com"
+  raw_email         = var.alert_email != "" && var.alert_email != null ? var.alert_email : "waranlogesh2005@gmail.com"
+  valid_alert_email = trimspace(replace(local.raw_email, "\"", ""))
 }
 
 # SNS Topic for Alarms

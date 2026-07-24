@@ -35,6 +35,12 @@ variable "frontend_image" {
   default     = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-frontend:latest"
 }
 
+variable "voice_agent_image" {
+  description = "ECR image URL for the Voice Agent container"
+  type        = string
+  default     = "962415228730.dkr.ecr.ap-northeast-1.amazonaws.com/ai-docs-backend:latest"
+}
+
 variable "ecs_backend_cpu" {
   description = "CPU units for backend ECS task"
   type        = number

@@ -247,7 +247,7 @@ resource "aws_ecs_task_definition" "voice_agent" {
   container_definitions = jsonencode([
     {
       name      = "voice-agent"
-      image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/ai-docs-voice-agent:${var.environment}"
+      image     = var.voice_agent_image
       essential = true
       portMappings = [
         {
