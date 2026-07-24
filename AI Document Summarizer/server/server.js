@@ -195,12 +195,21 @@ app.get("/api/health", (req, res) => {
 
 const isSecureCookie = process.env.COOKIE_SECURE === "true";
 
+const sessionMongoUri = process.env.MONGO_URI_FALLBACK || process.env.MONGO_URI || "mongodb://localhost:27017/ai-document-summarizer";
+
 app.use(session({
     secret: process.env.SESSION_SECRET || "a-very-long-random-string",
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      clientPromise: mongoose.connection.asPromise().then(m => m.connection.getClient())
+      mongoUrl: sessionMongoUri,
+      mongoOptions: {
+        family: 4,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        serverSelectionTimeoutMS: 5000,
+      },
+      ttl: 7 * 24 * 60 * 60, // 7 days
     }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
