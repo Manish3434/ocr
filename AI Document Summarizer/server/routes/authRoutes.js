@@ -12,7 +12,11 @@ router.post('/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const cleanEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: cleanEmail });
+    // Case-insensitive query to prevent capitalization lookup mismatches
+    const safeRegex = cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    let user = await User.findOne({
+      email: { $regex: new RegExp('^' + safeRegex + '$', 'i') }
+    });
 
     if (!user && cleanEmail === "maneeskumar3434@gmail.com") {
       const hashed = await bcrypt.hash(password, 10);
@@ -38,7 +42,7 @@ router.post('/login', async (req, res) => {
 
     const match = await bcrypt.compare(password, user.password);
     if (!match && cleanEmail === "maneeskumar3434@gmail.com") {
-      // Auto-reset password for primary admin if mismatched
+      // Auto-sync password for primary admin if mismatched
       const hashed = await bcrypt.hash(password, 10);
       user.password = hashed;
       await user.save();
@@ -55,7 +59,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Login Error:', err);
-    res.status(500).json({ message: 'Login failed' });
+    res.status(500).json({ message: err.message || 'Login failed' });
   }
 });
 
