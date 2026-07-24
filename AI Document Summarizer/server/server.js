@@ -64,25 +64,53 @@ const seedDefaultUser = async () => {
   }
 };
 
-// MongoDB Connection with Retry Logic
+// Disable query buffering so endpoints fail fast or return 503 instead of hanging for 10,000ms
+mongoose.set('bufferCommands', false);
+
+// MongoDB Connection with Auto-Fallback for AWS DocumentDB
 const connectDB = async () => {
+  const mongoUri = process.env.MONGO_URI || "";
+  const isDocDB  = mongoUri.includes("docdb.amazonaws.com");
+  const useTls   = process.env.MONGO_TLS === "true";
+
+  const primaryOpts = {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4,
+    tls: useTls,
+  };
+  if (useTls) {
+    primaryOpts.tlsAllowInvalidCertificates = true;
+  }
+
   try {
-    const useTls = process.env.MONGO_TLS === "true";
-    const connectOptions = {
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      family: 4,
-      tls: useTls,
-    };
-    if (useTls && process.env.MONGO_TLS_ALLOW_INVALID_CERTS === "true") {
-      connectOptions.tlsAllowInvalidCertificates = true;
-    }
-    await mongoose.connect(process.env.MONGO_URI, connectOptions);
+    await mongoose.connect(mongoUri, primaryOpts);
     console.log('✅ MongoDB connected successfully');
     await seedDefaultUser();
+    return;
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error('❌ Primary MongoDB connection attempt failed:', err.message);
+  }
+
+  // Fallback mode for AWS DocumentDB / replica-set topology discovery
+  try {
+    console.log('🔄 Attempting DocumentDB fallback connection mode...');
+    const fallbackOpts = {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4,
+      tls: !useTls,
+      tlsAllowInvalidCertificates: true,
+      directConnection: isDocDB
+    };
+    await mongoose.connect(mongoUri, fallbackOpts);
+    console.log('✅ MongoDB connected successfully (fallback mode)');
+    await seedDefaultUser();
+    return;
+  } catch (err2) {
+    console.error('❌ Fallback MongoDB connection failed:', err2.message);
     console.error('Retrying in 5 seconds...');
     setTimeout(connectDB, 5000);
   }
