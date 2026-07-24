@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "ap-northeast-1"
 }
 
+variable "aws_account_id" {
+  description = "AWS Account ID for ECR image registries"
+  type        = string
+  default     = "962415228730"
+}
+
 variable "environment" {
   description = "Deployment environment name"
   type        = string

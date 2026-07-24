@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "ai-docs-cluster-${var.environment}"
@@ -244,7 +246,7 @@ resource "aws_ecs_task_definition" "voice_agent" {
   container_definitions = jsonencode([
     {
       name      = "voice-agent"
-      image     = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/ai-docs-voice-agent:${var.environment}"
+      image     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/ai-docs-voice-agent:${var.environment}"
       essential = true
       portMappings = [
         {
