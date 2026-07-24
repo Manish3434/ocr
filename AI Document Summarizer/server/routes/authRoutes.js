@@ -53,9 +53,11 @@ router.post('/login', async (req, res) => {
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     req.login(user, (err) => {
-      if (err) return res.status(500).json({ message: 'Login session error' });
+      if (err) {
+        console.error('Session notice during login:', err);
+      }
       const { password: _, googleId, ...safe } = user.toObject();
-      res.json({ message: 'Logged in', user: safe });
+      return res.json({ message: 'Logged in', user: safe });
     });
   } catch (err) {
     console.error('Login Error:', err);
