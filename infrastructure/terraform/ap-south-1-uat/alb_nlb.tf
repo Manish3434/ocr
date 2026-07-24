@@ -144,3 +144,49 @@ resource "aws_lb_listener" "nlb_voice_tcp" {
     target_group_arn = aws_lb_target_group.voice_agent.arn
   }
 }
+
+# Optional NLB-to-ALB Target Group & Listener for HTTP/TCP Forwarding
+resource "aws_lb_target_group" "nlb_to_alb" {
+  name        = "ai-docs-tg-nlb-alb-${var.environment}"
+  port        = 80
+  protocol    = "TCP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "alb"
+
+  health_check {
+    enabled             = true
+    path                = "/api/health"
+    port                = "80"
+    protocol            = "HTTP"
+    interval            = 15
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+  }
+
+  tags = {
+    Name = "ai-docs-tg-nlb-alb-${var.environment}"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "nlb_alb_attachment" {
+  target_group_arn = aws_lb_target_group.nlb_to_alb.arn
+  target_id        = aws_lb.main.arn
+  port             = 80
+
+  depends_on = [
+    aws_lb.main,
+    aws_lb_listener.http
+  ]
+}
+
+resource "aws_lb_listener" "nlb_tcp_80" {
+  load_balancer_arn = aws_lb.nlb.arn
+  port              = "80"
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.nlb_to_alb.arn
+  }
+}

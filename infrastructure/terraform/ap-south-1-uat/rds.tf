@@ -4,16 +4,15 @@ resource "random_password" "docdb_master" {
   special = false
 }
 
-# DocumentDB Cluster Parameter Group - TLS disabled for simple connection
-# (No domain/certificate configured - plain mongodb:// connection from ECS)
-resource "aws_docdb_cluster_parameter_group" "no_tls" {
+# DocumentDB Cluster Parameter Group - TLS Enabled for Secure Encrypted Connections
+resource "aws_docdb_cluster_parameter_group" "tls_enabled" {
   family      = "docdb5.0"
-  name        = "ai-docs-docdb-no-tls-${var.environment}"
-  description = "DocumentDB parameter group with TLS disabled"
+  name        = "ai-docs-docdb-tls-enabled-${var.environment}"
+  description = "DocumentDB parameter group with TLS enabled for secure connections"
 
   parameter {
     name  = "tls"
-    value = "disabled"
+    value = "enabled"
   }
 
   tags = {
@@ -30,7 +29,7 @@ resource "aws_docdb_cluster" "docdb" {
   master_password                 = random_password.docdb_master.result
   db_subnet_group_name            = aws_db_subnet_group.db_subnet_group.name
   vpc_security_group_ids          = [aws_security_group.db.id]
-  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.no_tls.name
+  db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.tls_enabled.name
 
   storage_encrypted       = true
   backup_retention_period = 7
@@ -43,7 +42,7 @@ resource "aws_docdb_cluster" "docdb" {
   }
 }
 
-# DocumentDB Cluster Instances (2 for HA)
+# DocumentDB Cluster Instances (2 for High Availability)
 resource "aws_docdb_cluster_instance" "docdb_instances" {
   count              = 2
   identifier         = "ai-docs-docdb-instance-${count.index + 1}-${var.environment}"
